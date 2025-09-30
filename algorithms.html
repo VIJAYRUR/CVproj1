@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Algorithms - CRNN Deep Dive</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #1a365d;
+            --secondary-color: #2d3748;
+            --accent-color: #4a5568;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --bg-primary: #f7fafc;
+            --bg-secondary: #ffffff;
+            --border-color: #e2e8f0;
+            --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --shadow-medium: 0 8px 25px rgba(0, 0, 0, 0.12);
+            --sidebar-width: 280px;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background-color: var(--bg-primary);
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: var(--sidebar-width);
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            box-shadow: var(--shadow-soft);
+            transform: translateX(0);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .sidebar-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .sidebar-nav {
+            padding: 1rem 0;
+        }
+
+        .nav-item {
+            margin: 0.25rem 0;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            color: var(--text-dark);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background-color: var(--bg-primary);
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+        }
+
+        .nav-link.active {
+            background-color: var(--bg-primary);
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .nav-link i {
+            margin-right: 0.75rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            transition: margin-left 0.3s ease;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        .top-navbar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 1.5rem;
+            box-shadow: var(--shadow-soft);
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+
+        .sidebar-toggle {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+
+        .sidebar-toggle:hover {
+            background-color: var(--bg-primary);
+        }
+
+        .content-area {
+            padding: 2rem;
+        }
+
+        /* Page Header */
+        .page-header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem 0;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-color);
+        }
+
+        .page-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Slideshow Container */
+        .slideshow-container {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .slide {
+            display: none;
+            padding: 3rem;
+            min-height: 600px;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .slide-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .slide-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        /* Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .content-card {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-soft);
+            transition: all 0.3s ease;
+        }
+
+        .content-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .card-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        /* Code Block Styles */
+        .code-block {
+            background: var(--code-bg);
+            color: var(--code-text);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 1.5rem 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            overflow-x: auto;
+            border: 1px solid #334155;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #475569;
+        }
+
+        .code-title {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .code-line {
+            margin: 0.5rem 0;
+        }
+
+        .code-comment {
+            color: #64748b;
+            font-style: italic;
+        }
+
+        .code-keyword {
+            color: #60a5fa;
+            font-weight: 500;
+        }
+
+        .code-function {
+            color: #34d399;
+        }
+
+        .code-variable {
+            color: #fbbf24;
+        }
+
+        /* Algorithm Workflow */
+        .workflow-container {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+            border: 1px solid var(--border-color);
+        }
+
+        .workflow-step {
+            display: flex;
+            align-items: center;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .step-number {
+            width: 30px;
+            height: 30px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-title {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 0.25rem;
+        }
+
+        .step-description {
+            color: var(--text-light);
+            font-size: 0.95rem;
+        }
+
+        /* Comparison Table */
+        .comparison-table {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            margin: 2rem 0;
+        }
+
+        .comparison-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .comparison-table th {
+            background: var(--primary-color);
+            color: white;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .comparison-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .comparison-table tr:nth-child(even) {
+            background: var(--bg-primary);
+        }
+
+        /* Quiz Styles */
+        .quiz-container {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+            border: 1px solid var(--border-color);
+        }
+
+        .question-card {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .question-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .question-number {
+            width: 35px;
+            height: 35px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .question-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .options-container {
+            display: grid;
+            gap: 0.8rem;
+            margin-top: 1rem;
+        }
+
+        .option {
+            background: var(--bg-primary);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .option:hover {
+            border-color: var(--primary-color);
+            background: var(--bg-secondary);
+        }
+
+        .option-letter {
+            width: 25px;
+            height: 25px;
+            background: var(--text-light);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        /* Navigation Controls */
+        .slide-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2rem;
+            background: var(--bg-primary);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .slide-nav-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .slide-nav-btn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .slide-nav-btn:disabled {
+            background: var(--text-light);
+            cursor: not-allowed;
+            transform: none;
+            opacity: 0.5;
+        }
+
+        .slide-indicator {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .slide-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--border-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .slide-dot.active {
+            background: var(--primary-color);
+            transform: scale(1.2);
+        }
+
+        .slide-counter {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0 1rem;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .content-area {
+                padding: 1rem;
+            }
+            
+            .slide {
+                padding: 2rem 1.5rem;
+                min-height: auto;
+            }
+            
+            .page-title {
+                font-size: 2rem;
+            }
+            
+            .slide-title {
+                font-size: 1.8rem;
+            }
+            
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .slide-controls {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+        }
+
+        /* Sidebar Overlay for Mobile */
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2 class="sidebar-title">Modern Algorithms</h2>
+        </div>
+        <div class="sidebar-nav">
+            <div class="nav-item">
+                <a href="main.html" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    Home
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="introduction.html" class="nav-link">
+                    <i class="fas fa-play"></i>
+                    Introduction
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="techniques.html" class="nav-link">
+                    <i class="fas fa-cogs"></i>
+                    Techniques
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="algorithms.html" class="nav-link active">
+                    <i class="fas fa-brain"></i>
+                    Modern Algorithms
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="interaction.html" class="nav-link">
+                    <i class="fas fa-hand-pointer"></i>
+                    Interaction
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="datasets.html" class="nav-link">
+                    <i class="fas fa-database"></i>
+                    Datasets
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="challenges.html" class="nav-link">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Challenges
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="conclusion.html" class="nav-link">
+                    <i class="fas fa-flag-checkered"></i>
+                    Conclusion
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="bibliography.html" class="nav-link">
+                    <i class="fas fa-book"></i>
+                    Bibliography
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <!-- Top Navigation Bar -->
+        <nav class="top-navbar">
+            <div class="d-flex justify-content-between align-items-center">
+                <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar navigation">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Content Area -->
+        <div class="content-area">
+            <div class="page-header">
+                <h1 class="page-title">Modern Algorithms Deep Dive</h1>
+                <p style="color: var(--text-light); font-size: 1.1rem;">
+                    CRNN Architecture, Complexity Analysis, and Comparative Study
+                </p>
+            </div>
+
+            <!-- Slideshow Container -->
+            <div class="slideshow-container">
+                <!-- Slide 1: Technical Algorithm Details -->
+                <div class="slide active" id="slide1">
+                    <div class="slide-header">
+                        <h2 class="slide-title">Technical Algorithm / System Details</h2>
+                        <p class="slide-subtitle">CRNN (Convolutional Recurrent Neural Network) Architecture</p>
+                    </div>
+
+                
+                    <div class="workflow-container">
+                        <h4 style="color: var(--primary-color); font-weight: 600; margin-bottom: 1.5rem;">
+                            <i class="fas fa-sitemap"></i> CRNN Workflow
+                        </h4>
+                        <div class="workflow-step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <div class="step-title">Input Image Processing</div>
+                                <div class="step-description">Nutrition label or expiry date image is fed into the network</div>
+                            </div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <div class="step-title">CNN Feature Extraction</div>
+                                <div class="step-description">Convolutional layers extract spatial features → feature map</div>
+                            </div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <div class="step-title">RNN Sequence Modeling</div>
+                                <div class="step-description">Handles varying text length and sequential dependencies</div>
+                            </div>
+                        </div>
+                        <div class="workflow-step">
+                            <div class="step-number">4</div>
+                            <div class="step-content">
+                                <div class="step-title">Output & Decoding</div>
+                                <div class="step-description">Probability distribution → CTC decoded into final text</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 2: Algorithm Pseudo Code & Complexity -->
+                <div class="slide" id="slide2">
+                    <div class="slide-header">
+                        <h2 class="slide-title">Algorithm Pseudo Code & Complexity</h2>
+                        <p class="slide-subtitle">CRNN with CTC Decoding Implementation</p>
+                    </div>
+
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span class="code-title">CRNN Pseudo Code</span>
+                        </div>
+                        <div class="code-line"><span class="code-keyword">Input:</span> <span class="code-variable">Image I</span> <span class="code-comment">of size H x W</span></div>
+                        <div class="code-line"><span class="code-keyword">1.</span> <span class="code-variable">F</span> ← <span class="code-function">CNN</span>(<span class="code-variable">I</span>)          <span class="code-comment">// Extract features</span></div>
+                        <div class="code-line"><span class="code-keyword">2.</span> <span class="code-variable">S</span> ← <span class="code-function">reshape</span>(<span class="code-variable">F</span>)      <span class="code-comment">// Convert feature map into sequence</span></div>
+                        <div class="code-line"><span class="code-keyword">3.</span> <span class="code-variable">H</span> ← <span class="code-function">RNN</span>(<span class="code-variable">S</span>)          <span class="code-comment">// Sequence modeling with hidden states</span></div>
+                        <div class="code-line"><span class="code-keyword">4.</span> <span class="code-variable">P</span> ← <span class="code-function">Softmax</span>(<span class="code-variable">H</span>)      <span class="code-comment">// Output probability distribution</span></div>
+                        <div class="code-line"><span class="code-keyword">5.</span> <span class="code-variable">Y</span> ← <span class="code-function">CTC_Decode</span>(<span class="code-variable">P</span>)   <span class="code-comment">// Decode sequence into final text</span></div>
+                        <div class="code-line"></div>
+                        <div class="code-line"><span class="code-keyword">Output:</span> <span class="code-variable">Predicted text Y</span></div>
+                    </div>
+
+                    <div class="content-grid">
+                        <div class="content-card">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="fas fa-calculator"></i>
+                                </div>
+                                <h3 class="card-title">Complexity Analysis</h3>
+                            </div>
+                            <div style="margin-top: 1rem;">
+                                <div style="margin-bottom: 1rem;">
+                                    <strong style="color: var(--primary-color);">CNN feature extraction:</strong><br>
+                                    <code style="background: var(--bg-primary); padding: 0.25rem 0.5rem; border-radius: 4px;">O(H × W × k²)</code> where k = kernel size
+                                </div>
+                                <div style="margin-bottom: 1rem;">
+                                    <strong style="color: var(--primary-color);">RNN sequence modeling:</strong><br>
+                                    <code style="background: var(--bg-primary); padding: 0.25rem 0.5rem; border-radius: 4px;">O(T × h²)</code> where T = sequence length, h = hidden units
+                                </div>
+                                <div style="margin-bottom: 1rem;">
+                                    <strong style="color: var(--primary-color);">CTC decoding:</strong><br>
+                                    <code style="background: var(--bg-primary); padding: 0.25rem 0.5rem; border-radius: 4px;">O(T × |C|)</code> where |C| = character set size
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="content-card">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="fas fa-bolt"></i>
+                                </div>
+                                <h3 class="card-title">Performance Characteristics</h3>
+                            </div>
+                            <div style="margin-top: 1rem;">
+                                <div style="margin-bottom: 1rem; padding: 1rem; background: #e8f5e8; border-left: 3px solid #4caf50; border-radius: 4px;">
+                                    <strong style="color: #2e7d32;">✅ Efficient</strong><br>
+                                    <span style="color: #2e7d32;">For medium-length text sequences</span>
+                                </div>
+                                <div style="margin-bottom: 1rem; padding: 1rem; background: #ffeaa7; border-left: 3px solid #f39c12; border-radius: 4px;">
+                                    <strong style="color: #e65100;">⚠️ Less Scalable</strong><br>
+                                    <span style="color: #e65100;">For very long text sequences</span>
+                                </div>
+                                <div style="padding: 1rem; background: #ffebee; border-left: 3px solid #f44336; border-radius: 4px;">
+                                    <strong style="color: #c62828;">🔥 Training Complexity</strong><br>
+                                    <span style="color: #c62828;">Higher due to combined CNN + RNN + CTC pipeline</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 3: CRNN vs Alternatives -->
+                <div class="slide" id="slide3">
+                    <div class="slide-header">
+                        <h2 class="slide-title">CRNN vs Alternatives</h2>
+                        <p class="slide-subtitle">Comparative Analysis of OCR Approaches</p>
+                    </div>
+
+                    <div class="comparison-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Aspect</th>
+                                    <th>CRNN</th>
+                                    <th>YOLO + OCR</th>
+                                    <th>Transformer-based OCR</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Variable-length text</strong></td>
+                                    <td style="color: #2e7d32;">✅ Excellent</td>
+                                    <td style="color: #e65100;">⚠️ Limited</td>
+                                    <td style="color: #2e7d32;">✅ Excellent</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Structured text recognition</strong></td>
+                                    <td style="color: #2e7d32;">✅ Good</td>
+                                    <td style="color: #2e7d32;">✅ Good</td>
+                                    <td style="color: #2e7d32;">✅ Excellent</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Deployment weight</strong></td>
+                                    <td style="color: #2e7d32;">✅ Lightweight</td>
+                                    <td style="color: #2e7d32;">✅ Fast</td>
+                                    <td style="color: #c62828;">❌ Heavy</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Curved/glossy text</strong></td>
+                                    <td style="color: #c62828;">❌ Struggles</td>
+                                    <td style="color: #c62828;">❌ Poor</td>
+                                    <td style="color: #2e7d32;">✅ Superior</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Small fonts</strong></td>
+                                    <td style="color: #c62828;">❌ Poor accuracy</td>
+                                    <td style="color: #e65100;">⚠️ Limited</td>
+                                    <td style="color: #2e7d32;">✅ Better</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Multilingual support</strong></td>
+                                    <td style="color: #e65100;">⚠️ Weaker</td>
+                                    <td style="color: #e65100;">⚠️ Limited</td>
+                                    <td style="color: #2e7d32;">✅ Superior</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="content-grid">
+                        <div class="content-card">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="fas fa-thumbs-up"></i>
+                                </div>
+                                <h3 class="card-title">Where CRNN is Better</h3>
+                            </div>
+                            <ul style="margin-top: 1rem; line-height: 1.8;">
+                                <li>Handles variable-length text sequences (expiry dates, nutrition panels)</li>
+                                <li>Performs well on structured text recognition in small vocabularies</li>
+                                <li>Lightweight compared to Transformers → easier mobile deployment</li>
+                                <li>Good balance of accuracy and computational efficiency</li>
+                            </ul>
+                        </div>
+
+                        <div class="content-card">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <h3 class="card-title">CRNN Limitations</h3>
+                            </div>
+                            <ul style="margin-top: 1rem; line-height: 1.8;">
+                                <li>Struggles with curved/glossy packaging (distorted input)</li>
+                                <li>Small fonts → poor recognition accuracy</li>
+                                <li>Multilingual recognition → weaker than Transformer-based OCR</li>
+                                <li>Slower than YOLO + OCR for simple region detection tasks</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 4: Quiz Questions -->
+                <div class="slide" id="slide4">
+                    <div class="slide-header">
+                        <h2 class="slide-title">Quiz Questions</h2>
+                        <p class="slide-subtitle">Test Your Understanding of Modern OCR Algorithms</p>
+                    </div>
+
+                    <div class="quiz-container">
+                        <div class="question-card">
+                            <div class="question-header">
+                                <div class="question-number">Q1</div>
+                                <div class="question-text">Which component in CRNN helps in modeling the sequence of characters from images?</div>
+                            </div>
+                            <div class="options-container">
+                                <div class="option" data-question="1" data-option="A">
+                                    <div class="option-letter">A</div>
+                                    <span>CNN</span>
+                                </div>
+                                <div class="option" data-question="1" data-option="B">
+                                    <div class="option-letter">B</div>
+                                    <span>RNN</span>
+                                </div>
+                                <div class="option" data-question="1" data-option="C">
+                                    <div class="option-letter">C</div>
+                                    <span>CTC Decoder</span>
+                                </div>
+                                <div class="option" data-question="1" data-option="D">
+                                    <div class="option-letter">D</div>
+                                    <span>Transformer</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="question-card">
+                            <div class="question-header">
+                                <div class="question-number">Q2</div>
+                                <div class="question-text">Why might Transformer-based OCR outperform CRNN in certain scenarios?</div>
+                            </div>
+                            <div class="options-container">
+                                <div class="option" data-question="2" data-option="A">
+                                    <div class="option-letter">A</div>
+                                    <span>Better for small fonts</span>
+                                </div>
+                                <div class="option" data-question="2" data-option="B">
+                                    <div class="option-letter">B</div>
+                                    <span>Uses self-attention for multilingual and curved text</span>
+                                </div>
+                                <div class="option" data-question="2" data-option="C">
+                                    <div class="option-letter">C</div>
+                                    <span>Faster than YOLO</span>
+                                </div>
+                                <div class="option" data-question="2" data-option="D">
+                                    <div class="option-letter">D</div>
+                                    <span>Requires less training data</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="text-align: center; margin-top: 2rem; padding: 1rem; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-color);">
+                            <p style="color: var(--text-light); margin-bottom: 1rem;">
+                                <strong>Answers:</strong> Q1: B (RNN) | Q2: B (Uses self-attention for multilingual and curved text)
+                            </p>
+                            <button class="slide-nav-btn" onclick="checkAnswers()">
+                                <i class="fas fa-check"></i>
+                                Check Answers
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Controls -->
+                <div class="slide-controls">
+                    <button class="slide-nav-btn" id="prevBtn" onclick="changeSlide(-1)">
+                        <i class="fas fa-chevron-left"></i>
+                        Previous
+                    </button>
+
+                    <div class="slide-indicator">
+                        <div class="slide-dot active" onclick="currentSlide(1)"></div>
+                        <div class="slide-dot" onclick="currentSlide(2)"></div>
+                        <div class="slide-dot" onclick="currentSlide(3)"></div>
+                        <div class="slide-dot" onclick="currentSlide(4)"></div>
+                        <span class="slide-counter">1 / 4</span>
+                    </div>
+
+                    <button class="slide-nav-btn" id="nextBtn" onclick="changeSlide(1)">
+                        Next
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Custom JavaScript -->
+    <script>
+        let currentSlideIndex = 1;
+        const totalSlides = 4;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+            // Toggle sidebar
+            function toggleSidebar() {
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.toggle('show');
+                    sidebarOverlay.classList.toggle('show');
+                } else {
+                    sidebar.classList.toggle('collapsed');
+                    mainContent.classList.toggle('expanded');
+                }
+            }
+
+            // Close sidebar when clicking overlay
+            function closeSidebar() {
+                sidebar.classList.remove('show');
+                sidebarOverlay.classList.remove('show');
+            }
+
+            // Event listeners
+            sidebarToggle.addEventListener('click', toggleSidebar);
+            sidebarOverlay.addEventListener('click', closeSidebar);
+
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768) {
+                    sidebar.classList.remove('show');
+                    sidebarOverlay.classList.remove('show');
+                }
+            });
+
+            // Keyboard navigation
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeSidebar();
+                } else if (e.key === 'ArrowLeft') {
+                    changeSlide(-1);
+                } else if (e.key === 'ArrowRight') {
+                    changeSlide(1);
+                }
+            });
+
+            // Quiz option selection
+            const options = document.querySelectorAll('.option');
+            options.forEach(option => {
+                option.addEventListener('click', function() {
+                    const question = this.dataset.question;
+                    const questionOptions = document.querySelectorAll(`[data-question="${question}"]`);
+                    questionOptions.forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                });
+            });
+        });
+
+        function showSlide(n) {
+            const slides = document.querySelectorAll('.slide');
+            const dots = document.querySelectorAll('.slide-dot');
+            const counter = document.querySelector('.slide-counter');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+
+            if (n > totalSlides) currentSlideIndex = 1;
+            if (n < 1) currentSlideIndex = totalSlides;
+
+            slides.forEach(slide => slide.classList.remove('active'));
+            dots.forEach(dot => dot.classList.remove('active'));
+
+            slides[currentSlideIndex - 1].classList.add('active');
+            dots[currentSlideIndex - 1].classList.add('active');
+            counter.textContent = `${currentSlideIndex} / ${totalSlides}`;
+
+            // Update button states
+            prevBtn.disabled = currentSlideIndex === 1;
+            nextBtn.disabled = currentSlideIndex === totalSlides;
+        }
+
+        function changeSlide(n) {
+            currentSlideIndex += n;
+            showSlide(currentSlideIndex);
+        }
+
+        function currentSlide(n) {
+            currentSlideIndex = n;
+            showSlide(currentSlideIndex);
+        }
+
+        function checkAnswers() {
+            const correctAnswers = {1: 'B', 2: 'B'};
+            let score = 0;
+
+            Object.keys(correctAnswers).forEach(questionNum => {
+                const selectedOption = document.querySelector(`[data-question="${questionNum}"].selected`);
+                const questionOptions = document.querySelectorAll(`[data-question="${questionNum}"]`);
+
+                questionOptions.forEach(option => {
+                    option.classList.remove('correct', 'incorrect');
+                    if (option.dataset.option === correctAnswers[questionNum]) {
+                        option.classList.add('correct');
+                        option.style.borderColor = '#4caf50';
+                        option.style.background = '#e8f5e8';
+                        option.style.color = '#2e7d32';
+                    } else if (selectedOption && option === selectedOption && option.dataset.option !== correctAnswers[questionNum]) {
+                        option.classList.add('incorrect');
+                        option.style.borderColor = '#f44336';
+                        option.style.background = '#ffebee';
+                        option.style.color = '#c62828';
+                    }
+                });
+
+                if (selectedOption && selectedOption.dataset.option === correctAnswers[questionNum]) {
+                    score++;
+                }
+            });
+
+            alert(`Quiz Results: ${score}/${Object.keys(correctAnswers).length} correct answers!`);
+        }
+
+        // Initialize
+        showSlide(currentSlideIndex);
+    </script>
+</body>
+</html>

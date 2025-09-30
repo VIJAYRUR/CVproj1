@@ -273,6 +273,52 @@
             background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
         }
 
+        /* Algorithm slideshow styles */
+        .algorithm-slide {
+            transition: all 0.5s ease-in-out;
+        }
+
+        .algorithm-navigation .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .algorithm-navigation .nav-btn:disabled {
+            opacity: 0.5 !important;
+            cursor: not-allowed !important;
+            transform: none !important;
+        }
+
+        .algorithm-navigation .indicator:hover {
+            transform: scale(1.2);
+        }
+
+        .content-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-large);
+        }
+
+        .complexity-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-large);
+        }
+
+        .advantage-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-large);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         .stage-header {
             display: flex;
             align-items: center;
@@ -1432,19 +1478,28 @@
             </div>
         </nav>
 
-        <!-- Content Area -->
-        <div class="content-area">
-            <div class="page-header">
-                <h1 class="page-title">Computer Vision Techniques</h1>
-                <p style="text-align: center; color: var(--text-light); margin-top: 1rem; font-size: 1.1rem;">
-                    A comprehensive 3-stage pipeline for accessible food label reading
-                </p>
+            <!-- Section Divider -->
+            <div class="section-divider" style="margin: 4rem 0; text-align: center;">
+                <div style="height: 1px; background: linear-gradient(90deg, transparent, var(--border-color), transparent); margin: 2rem 0;"></div>
+                <div style="display: inline-block; background: var(--bg-primary); padding: 0.5rem 2rem; border-radius: 20px; border: 1px solid var(--border-color); color: var(--text-light); font-size: 0.9rem; font-weight: 500;">
+                    <i class="fas fa-chevron-down" style="margin-right: 0.5rem; color: var(--primary-color);"></i>
+                    Pipeline Implementation
+                    <i class="fas fa-chevron-down" style="margin-left: 0.5rem; color: var(--primary-color);"></i>
+                </div>
+                <div style="height: 1px; background: linear-gradient(90deg, transparent, var(--border-color), transparent); margin: 2rem 0;"></div>
             </div>
 
             <!-- Pipeline Presentation -->
             <div class="pipeline-presentation">
+                <div class="section-header" style="text-align: center; margin-bottom: 1.5rem; padding: 1rem 0;">
+                    <h2 style="font-family: 'Poppins', sans-serif; font-size: 1.8rem; font-weight: 600; color: var(--primary-color); margin-bottom: 0.25rem;">
+                        <i class="fas fa-project-diagram" style="margin-right: 0.5rem;"></i>Complete Pipeline Flow
+                    </h2>
+                    <p style="color: var(--text-light); font-size: 0.95rem; margin: 0;">
+                        End-to-End Computer Vision Pipeline for Food Label Processing
+                    </p>
+                </div>
                 <div class="pipeline-header">
-                    <h2 class="pipeline-title">Complete Pipeline Flow</h2>
                     <div class="pipeline-flow">
                         <div class="flow-diagram">
                             Image Capture → Preprocessing → OCR → Nutrition | Expiry | Allergen
@@ -1452,7 +1507,7 @@
                     </div>
                 </div>
 
-                <div class="pipeline-container">
+                <div class="pipeline-container pipeline-slideshow" style="margin-top: 2rem;">
                     <!-- Stage 1: Image Acquisition & Preprocessing -->
                     <div class="stage-slide active" id="stage1">
                 <div class="stage-header">
@@ -1795,7 +1850,7 @@
                         <div class="indicator-dot" onclick="goToSlide(1)" title="Stage 2: OCR Methods"></div>
                         <div class="indicator-dot" onclick="goToSlide(2)" title="Stage 3: Specialized Tasks"></div>
                         <div class="indicator-dot" onclick="goToSlide(3)" title="Quiz"></div>
-                        <span class="slide-counter">1 / 4</span>
+                        <span class="slide-counter" id="pipeline-slide-counter">1 / 4</span>
                     </div>
 
                     <button class="slide-nav-btn" id="nextBtn" onclick="changeSlide(1)">
@@ -1805,6 +1860,359 @@
                 </div>
             </div>
 
+ <div class="section-divider" style="margin: 4rem 0; text-align: center;">
+                <div style="height: 1px; background: linear-gradient(90deg, transparent, var(--border-color), transparent); margin: 2rem 0;"></div>
+                <div style="display: inline-block; background: var(--bg-primary); padding: 0.5rem 2rem; border-radius: 20px; border: 1px solid var(--border-color); color: var(--text-light); font-size: 0.9rem; font-weight: 500;">
+                    <i class="fas fa-chevron-down" style="margin-right: 0.5rem; color: var(--primary-color);"></i>
+                    CRNN Algorithm Analysis
+                    <i class="fas fa-chevron-down" style="margin-left: 0.5rem; color: var(--primary-color);"></i>
+                </div>
+                <div style="height: 1px; background: linear-gradient(90deg, transparent, var(--border-color), transparent); margin: 2rem 0;"></div>
+            </div>
+
+        <!-- Content Area -->
+        
+
+            <!-- Modern Algorithms Section -->
+          
+                <!-- Algorithm Slideshow Container -->
+                <div class="slideshow-container algorithm-slideshow" style="background: var(--bg-secondary); border-radius: 16px; box-shadow: var(--shadow-soft); border: 1px solid var(--border-color); overflow: hidden; position: relative; margin-bottom: 4rem;">
+                    <!-- Algorithm Slide 1: Technical Details -->
+                    <div class="algorithm-slide active" id="algo-slide1" style="display: block; padding: 3rem; min-height: 600px; animation: fadeIn 0.5s ease-in-out;">
+                        <div class="slide-header" style="text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border-color);">
+                            <h3 style="font-family: 'Poppins', sans-serif; font-size: 2rem; font-weight: 600; color: var(--primary-color); margin-bottom: 0.5rem;">
+                                Technical Algorithm / System Details
+                            </h3>
+                            <p style="font-size: 1.1rem; color: var(--text-light); font-weight: 500;">
+                                CRNN (Convolutional Recurrent Neural Network) Architecture
+                            </p>
+                        </div>
+
+
+
+                        <div class="workflow-container" style="background: var(--bg-primary); border-radius: 12px; padding: 2rem; margin: 2rem 0; border: 1px solid var(--border-color);">
+                            <h4 style="color: var(--primary-color); font-weight: 600; margin-bottom: 1.5rem;">
+                                <i class="fas fa-sitemap"></i> CRNN Workflow
+                            </h4>
+                            <div class="workflow-step" style="display: flex; align-items: center; margin: 1rem 0; padding: 1rem; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid var(--primary-color);">
+                                <div class="step-number" style="width: 30px; height: 30px; background: var(--primary-color); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; margin-right: 1rem; flex-shrink: 0;">1</div>
+                                <div class="step-content" style="flex: 1;">
+                                    <div class="step-title" style="font-weight: 600; color: var(--primary-color); margin-bottom: 0.25rem;">Input Image Processing</div>
+                                    <div class="step-description" style="color: var(--text-light); font-size: 0.95rem;">Nutrition label or expiry date image is fed into the network</div>
+                                </div>
+                            </div>
+                            <div class="workflow-step" style="display: flex; align-items: center; margin: 1rem 0; padding: 1rem; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid var(--primary-color);">
+                                <div class="step-number" style="width: 30px; height: 30px; background: var(--primary-color); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; margin-right: 1rem; flex-shrink: 0;">2</div>
+                                <div class="step-content" style="flex: 1;">
+                                    <div class="step-title" style="font-weight: 600; color: var(--primary-color); margin-bottom: 0.25rem;">CNN Feature Extraction</div>
+                                    <div class="step-description" style="color: var(--text-light); font-size: 0.95rem;">Convolutional layers extract spatial features → feature map</div>
+                                </div>
+                            </div>
+                            <div class="workflow-step" style="display: flex; align-items: center; margin: 1rem 0; padding: 1rem; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid var(--primary-color);">
+                                <div class="step-number" style="width: 30px; height: 30px; background: var(--primary-color); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; margin-right: 1rem; flex-shrink: 0;">3</div>
+                                <div class="step-content" style="flex: 1;">
+                                    <div class="step-title" style="font-weight: 600; color: var(--primary-color); margin-bottom: 0.25rem;">RNN Sequence Modeling</div>
+                                    <div class="step-description" style="color: var(--text-light); font-size: 0.95rem;">Handles varying text length and sequential dependencies</div>
+                                </div>
+                            </div>
+                            <div class="workflow-step" style="display: flex; align-items: center; margin: 1rem 0; padding: 1rem; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid var(--primary-color);">
+                                <div class="step-number" style="width: 30px; height: 30px; background: var(--primary-color); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; margin-right: 1rem; flex-shrink: 0;">4</div>
+                                <div class="step-content" style="flex: 1;">
+                                    <div class="step-title" style="font-weight: 600; color: var(--primary-color); margin-bottom: 0.25rem;">Output & Decoding</div>
+                                    <div class="step-description" style="color: var(--text-light); font-size: 0.95rem;">Probability distribution → CTC decoded into final text</div>
+                                </div>
+                            </div>
+                        </div>
+
+
+                    </div>
+
+                    <!-- Algorithm Slide 2: Complexity Analysis -->
+                    <div class="algorithm-slide" id="algo-slide2" style="display: none; padding: 3rem; min-height: 600px; animation: fadeIn 0.5s ease-in-out;">
+                        <div class="slide-header" style="text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border-color);">
+                            <h3 style="font-family: 'Poppins', sans-serif; font-size: 2rem; font-weight: 600; color: var(--primary-color); margin-bottom: 0.5rem;">
+                                Complexity Analysis
+                            </h3>
+                            <p style="font-size: 1.1rem; color: var(--text-light); font-weight: 500;">
+                                Time & Space Complexity Breakdown
+                            </p>
+                        </div>
+
+                        <div class="complexity-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin: 2rem 0;">
+                            <div class="complexity-card" style="background: var(--bg-primary); border-radius: 12px; padding: 2rem; border: 1px solid var(--border-color); box-shadow: var(--shadow-soft);">
+                                <div class="complexity-header" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                                    <div class="complexity-icon" style="width: 40px; height: 40px; background: linear-gradient(135deg, #e74c3c, #c0392b); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem;">
+                                        <i class="fas fa-clock"></i>
+                                    </div>
+                                    <h4 style="font-family: 'Poppins', sans-serif; font-size: 1.3rem; font-weight: 600; color: var(--primary-color); margin: 0;">Time Complexity</h4>
+                                </div>
+                                <div class="complexity-details">
+                                    <div class="complexity-item" style="margin: 1rem 0; padding: 1rem; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid #e74c3c;">
+                                        <div style="font-weight: 600; color: var(--primary-color); margin-bottom: 0.5rem;">Training: O(n × m × d)</div>
+                                        <div style="color: var(--text-light); font-size: 0.9rem;">n = sequence length, m = batch size, d = model depth</div>
+                                    </div>
+                                    <div class="complexity-item" style="margin: 1rem 0; padding: 1rem; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid #e74c3c;">
+                                        <div style="font-weight: 600; color: var(--primary-color); margin-bottom: 0.5rem;">Inference: O(n × d)</div>
+                                        <div style="color: var(--text-light); font-size: 0.9rem;">Linear with sequence length and model depth</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="complexity-card" style="background: var(--bg-primary); border-radius: 12px; padding: 2rem; border: 1px solid var(--border-color); box-shadow: var(--shadow-soft);">
+                                <div class="complexity-header" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                                    <div class="complexity-icon" style="width: 40px; height: 40px; background: linear-gradient(135deg, #3498db, #2980b9); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem;">
+                                        <i class="fas fa-memory"></i>
+                                    </div>
+                                    <h4 style="font-family: 'Poppins', sans-serif; font-size: 1.3rem; font-weight: 600; color: var(--primary-color); margin: 0;">Space Complexity</h4>
+                                </div>
+                                <div class="complexity-details">
+                                    <div class="complexity-item" style="margin: 1rem 0; padding: 1rem; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid #3498db;">
+                                        <div style="font-weight: 600; color: var(--primary-color); margin-bottom: 0.5rem;">Model Parameters: O(p)</div>
+                                        <div style="color: var(--text-light); font-size: 0.9rem;">p = total number of trainable parameters</div>
+                                    </div>
+                                    <div class="complexity-item" style="margin: 1rem 0; padding: 1rem; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid #3498db;">
+                                        <div style="font-weight: 600; color: var(--primary-color); margin-bottom: 0.5rem;">Memory Usage: O(n × h)</div>
+                                        <div style="color: var(--text-light); font-size: 0.9rem;">n = sequence length, h = hidden state size</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="performance-metrics" style="background: var(--bg-primary); border-radius: 12px; padding: 2rem; margin: 2rem 0; border: 1px solid var(--border-color);">
+                            <h4 style="color: var(--primary-color); font-weight: 600; margin-bottom: 1.5rem;">
+                                <i class="fas fa-chart-line"></i> Performance Characteristics
+                            </h4>
+                            <div class="metrics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+                                <div class="metric-item" style="padding: 1rem; background: var(--bg-secondary); border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 2rem; font-weight: 600; color: var(--primary-color); margin-bottom: 0.5rem;">95%+</div>
+                                    <div style="color: var(--text-light); font-size: 0.9rem;">Accuracy on clean text</div>
+                                </div>
+                                <div class="metric-item" style="padding: 1rem; background: var(--bg-secondary); border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 2rem; font-weight: 600; color: var(--primary-color); margin-bottom: 0.5rem;">~50ms</div>
+                                    <div style="color: var(--text-light); font-size: 0.9rem;">Inference time per image</div>
+                                </div>
+                                <div class="metric-item" style="padding: 1rem; background: var(--bg-secondary); border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 2rem; font-weight: 600; color: var(--primary-color); margin-bottom: 0.5rem;">10-50MB</div>
+                                    <div style="color: var(--text-light); font-size: 0.9rem;">Model size range</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Algorithm Slide 3: Comparison -->
+                    <div class="algorithm-slide" id="algo-slide3" style="display: none; padding: 3rem; min-height: 600px; animation: fadeIn 0.5s ease-in-out;">
+                        <div class="slide-header" style="text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border-color);">
+                            <h3 style="font-family: 'Poppins', sans-serif; font-size: 2rem; font-weight: 600; color: var(--primary-color); margin-bottom: 0.5rem;">
+                                Algorithm Comparison
+                            </h3>
+                            <p style="font-size: 1.1rem; color: var(--text-light); font-weight: 500;">
+                                CRNN vs Traditional OCR Methods
+                            </p>
+                        </div>
+
+                        <div class="comparison-table" style="background: var(--bg-primary); border-radius: 12px; padding: 2rem; border: 1px solid var(--border-color); overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse; font-family: 'Inter', sans-serif;">
+                                <thead>
+                                    <tr style="background: var(--bg-secondary); border-bottom: 2px solid var(--border-color);">
+                                        <th style="padding: 1rem; text-align: left; font-weight: 600; color: var(--primary-color); border-right: 1px solid var(--border-color);">Method</th>
+                                        <th style="padding: 1rem; text-align: center; font-weight: 600; color: var(--primary-color); border-right: 1px solid var(--border-color);">Accuracy</th>
+                                        <th style="padding: 1rem; text-align: center; font-weight: 600; color: var(--primary-color); border-right: 1px solid var(--border-color);">Speed</th>
+                                        <th style="padding: 1rem; text-align: center; font-weight: 600; color: var(--primary-color); border-right: 1px solid var(--border-color);">Robustness</th>
+                                        <th style="padding: 1rem; text-align: center; font-weight: 600; color: var(--primary-color);">Training Data</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="border-bottom: 1px solid var(--border-color);">
+                                        <td style="padding: 1rem; font-weight: 600; color: var(--primary-color); border-right: 1px solid var(--border-color);">CRNN (Our Choice)</td>
+                                        <td style="padding: 1rem; text-align: center; color: #27ae60; font-weight: 600; border-right: 1px solid var(--border-color);">95%+</td>
+                                        <td style="padding: 1rem; text-align: center; color: #27ae60; font-weight: 600; border-right: 1px solid var(--border-color);">Fast</td>
+                                        <td style="padding: 1rem; text-align: center; color: #27ae60; font-weight: 600; border-right: 1px solid var(--border-color);">High</td>
+                                        <td style="padding: 1rem; text-align: center; color: #f39c12; font-weight: 600;">Large</td>
+                                    </tr>
+                                    <tr style="border-bottom: 1px solid var(--border-color);">
+                                        <td style="padding: 1rem; font-weight: 600; color: var(--text-primary); border-right: 1px solid var(--border-color);">Traditional OCR</td>
+                                        <td style="padding: 1rem; text-align: center; color: #f39c12; font-weight: 600; border-right: 1px solid var(--border-color);">80-90%</td>
+                                        <td style="padding: 1rem; text-align: center; color: #27ae60; font-weight: 600; border-right: 1px solid var(--border-color);">Very Fast</td>
+                                        <td style="padding: 1rem; text-align: center; color: #e74c3c; font-weight: 600; border-right: 1px solid var(--border-color);">Low</td>
+                                        <td style="padding: 1rem; text-align: center; color: #27ae60; font-weight: 600;">None</td>
+                                    </tr>
+                                    <tr style="border-bottom: 1px solid var(--border-color);">
+                                        <td style="padding: 1rem; font-weight: 600; color: var(--text-primary); border-right: 1px solid var(--border-color);">Transformer OCR</td>
+                                        <td style="padding: 1rem; text-align: center; color: #27ae60; font-weight: 600; border-right: 1px solid var(--border-color);">96%+</td>
+                                        <td style="padding: 1rem; text-align: center; color: #e74c3c; font-weight: 600; border-right: 1px solid var(--border-color);">Slow</td>
+                                        <td style="padding: 1rem; text-align: center; color: #27ae60; font-weight: 600; border-right: 1px solid var(--border-color);">Very High</td>
+                                        <td style="padding: 1rem; text-align: center; color: #e74c3c; font-weight: 600;">Very Large</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="advantages-section" style="margin: 2rem 0;">
+                            <div class="advantages-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                                <div class="advantage-card" style="background: var(--bg-primary); border-radius: 12px; padding: 2rem; border: 1px solid var(--border-color); box-shadow: var(--shadow-soft);">
+                                    <h4 style="color: var(--primary-color); font-weight: 600; margin-bottom: 1rem;">
+                                        <i class="fas fa-check-circle" style="color: #27ae60; margin-right: 0.5rem;"></i>
+                                        CRNN Advantages
+                                    </h4>
+                                    <ul style="list-style: none; padding: 0; margin: 0;">
+                                        <li style="padding: 0.5rem 0; color: var(--text-light); border-bottom: 1px solid var(--border-color);">
+                                            <i class="fas fa-arrow-right" style="color: var(--primary-color); margin-right: 0.5rem;"></i>
+                                            End-to-end trainable
+                                        </li>
+                                        <li style="padding: 0.5rem 0; color: var(--text-light); border-bottom: 1px solid var(--border-color);">
+                                            <i class="fas fa-arrow-right" style="color: var(--primary-color); margin-right: 0.5rem;"></i>
+                                            Handles variable-length text
+                                        </li>
+                                        <li style="padding: 0.5rem 0; color: var(--text-light); border-bottom: 1px solid var(--border-color);">
+                                            <i class="fas fa-arrow-right" style="color: var(--primary-color); margin-right: 0.5rem;"></i>
+                                            No character segmentation needed
+                                        </li>
+                                        <li style="padding: 0.5rem 0; color: var(--text-light);">
+                                            <i class="fas fa-arrow-right" style="color: var(--primary-color); margin-right: 0.5rem;"></i>
+                                            Robust to noise and distortion
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <div class="advantage-card" style="background: var(--bg-primary); border-radius: 12px; padding: 2rem; border: 1px solid var(--border-color); box-shadow: var(--shadow-soft);">
+                                    <h4 style="color: var(--primary-color); font-weight: 600; margin-bottom: 1rem;">
+                                        <i class="fas fa-lightbulb" style="color: #f39c12; margin-right: 0.5rem;"></i>
+                                        Why CRNN for Food Labels?
+                                    </h4>
+                                    <ul style="list-style: none; padding: 0; margin: 0;">
+                                        <li style="padding: 0.5rem 0; color: var(--text-light); border-bottom: 1px solid var(--border-color);">
+                                            <i class="fas fa-arrow-right" style="color: var(--primary-color); margin-right: 0.5rem;"></i>
+                                            Handles curved/distorted text
+                                        </li>
+                                        <li style="padding: 0.5rem 0; color: var(--text-light); border-bottom: 1px solid var(--border-color);">
+                                            <i class="fas fa-arrow-right" style="color: var(--primary-color); margin-right: 0.5rem;"></i>
+                                            Works with various fonts/sizes
+                                        </li>
+                                        <li style="padding: 0.5rem 0; color: var(--text-light); border-bottom: 1px solid var(--border-color);">
+                                            <i class="fas fa-arrow-right" style="color: var(--primary-color); margin-right: 0.5rem;"></i>
+                                            Optimal speed-accuracy balance
+                                        </li>
+                                        <li style="padding: 0.5rem 0; color: var(--text-light);">
+                                            <i class="fas fa-arrow-right" style="color: var(--primary-color); margin-right: 0.5rem;"></i>
+                                            Mobile-friendly deployment
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Algorithm Slide 4: Pseudocode -->
+                    <div class="algorithm-slide" id="algo-slide4" style="display: none; padding: 3rem; min-height: 600px; animation: fadeIn 0.5s ease-in-out;">
+                        <div class="slide-header" style="text-align: center; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border-color);">
+                            <h3 style="font-family: 'Poppins', sans-serif; font-size: 2rem; font-weight: 600; color: var(--primary-color); margin-bottom: 0.5rem;">
+                                <i class="fas fa-code" style="margin-right: 0.5rem;"></i>CRNN Algorithm Pseudocode
+                            </h3>
+                            <p style="font-size: 1.1rem; color: var(--text-light); font-weight: 500;">
+                                Step-by-step Algorithm Implementation
+                            </p>
+                        </div>
+
+                        <div class="pseudocode-container" style="background: var(--bg-primary); border-radius: 12px; padding: 2.5rem; border: 1px solid var(--border-color); box-shadow: var(--shadow-soft); max-width: 800px; margin: 0 auto;">
+                            <!-- Code snippet styled like VS Code -->
+                            <div class="code-header" style="background: #2d3748; color: #e2e8f0; padding: 0.75rem 1rem; border-radius: 8px 8px 0 0; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.9rem; font-weight: 600; border-bottom: 1px solid #4a5568;">
+                                <i class="fas fa-code" style="margin-right: 0.5rem; color: #63b3ed;"></i>CRNN Algorithm Pseudocode
+                            </div>
+
+                            <div class="code-content" style="background: #1a202c; color: #e2e8f0; padding: 2rem; border-radius: 0 0 8px 8px; font-family: 'Fira Code', 'Consolas', monospace; font-size: 1rem; line-height: 1.8; overflow-x: auto;">
+                                <div style="margin-bottom: 1.5rem;">
+                                    <span style="color: #68d391; font-weight: 600;">Input:</span><br>
+                                    <span style="color: #e2e8f0; margin-left: 1rem;">Image I of size H x W</span>
+                                </div>
+
+                                <div style="border-left: 3px solid #4299e1; padding-left: 1rem; margin: 1.5rem 0;">
+                                    <div style="margin: 0.8rem 0; display: flex; align-items: flex-start;">
+                                        <span style="background: #4299e1; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 600; margin-right: 1rem; flex-shrink: 0; margin-top: 0.1rem;">1</span>
+                                        <span style="color: #e2e8f0;">
+                                            <span style="color: #f7fafc; font-weight: 600;">F ←</span>
+                                            <span style="color: #63b3ed;">CNN</span>(<span style="color: #fbb6ce;">I</span>)
+                                            <span style="color: #a0aec0; margin-left: 2rem;">// Extract features</span>
+                                        </span>
+                                    </div>
+
+                                    <div style="margin: 0.8rem 0; display: flex; align-items: flex-start;">
+                                        <span style="background: #4299e1; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 600; margin-right: 1rem; flex-shrink: 0; margin-top: 0.1rem;">2</span>
+                                        <span style="color: #e2e8f0;">
+                                            <span style="color: #f7fafc; font-weight: 600;">S ←</span>
+                                            <span style="color: #63b3ed;">reshape</span>(<span style="color: #fbb6ce;">F</span>)
+                                            <span style="color: #a0aec0; margin-left: 1rem;">// Convert feature map into sequence</span>
+                                        </span>
+                                    </div>
+
+                                    <div style="margin: 0.8rem 0; display: flex; align-items: flex-start;">
+                                        <span style="background: #4299e1; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 600; margin-right: 1rem; flex-shrink: 0; margin-top: 0.1rem;">3</span>
+                                        <span style="color: #e2e8f0;">
+                                            <span style="color: #f7fafc; font-weight: 600;">H ←</span>
+                                            <span style="color: #63b3ed;">RNN</span>(<span style="color: #fbb6ce;">S</span>)
+                                            <span style="color: #a0aec0; margin-left: 1.5rem;">// Sequence modeling with hidden states</span>
+                                        </span>
+                                    </div>
+
+                                    <div style="margin: 0.8rem 0; display: flex; align-items: flex-start;">
+                                        <span style="background: #4299e1; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 600; margin-right: 1rem; flex-shrink: 0; margin-top: 0.1rem;">4</span>
+                                        <span style="color: #e2e8f0;">
+                                            <span style="color: #f7fafc; font-weight: 600;">P ←</span>
+                                            <span style="color: #63b3ed;">Softmax</span>(<span style="color: #fbb6ce;">H</span>)
+                                            <span style="color: #a0aec0; margin-left: 1rem;">// Output probability distribution</span>
+                                        </span>
+                                    </div>
+
+                                    <div style="margin: 0.8rem 0; display: flex; align-items: flex-start;">
+                                        <span style="background: #4299e1; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 600; margin-right: 1rem; flex-shrink: 0; margin-top: 0.1rem;">5</span>
+                                        <span style="color: #e2e8f0;">
+                                            <span style="color: #f7fafc; font-weight: 600;">Y ←</span>
+                                            <span style="color: #63b3ed;">CTC_Decode</span>(<span style="color: #fbb6ce;">P</span>)
+                                            <span style="color: #a0aec0; margin-left: 0.5rem;">// Decode sequence into final text</span>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #4a5568;">
+                                    <span style="color: #68d391; font-weight: 600;">Output:</span><br>
+                                    <span style="color: #e2e8f0; margin-left: 1rem;">Predicted text Y</span>
+                                </div>
+                            </div>
+
+                            <!-- Algorithm Flow Summary -->
+                            <div style="background: #2d3748; color: #e2e8f0; padding: 1rem; border-radius: 8px; margin-top: 1rem; border-left: 4px solid #4299e1;">
+                                <div style="font-weight: 600; color: #63b3ed; margin-bottom: 0.5rem;">
+                                    <i class="fas fa-sitemap" style="margin-right: 0.5rem;"></i>Algorithm Flow:
+                                </div>
+                                <div style="font-size: 0.9rem; color: #cbd5e0;">
+                                    Input image → CNN feature extraction → Sequence reshaping → RNN processing → Probability generation → CTC decoding → Final text output
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Algorithm Navigation -->
+                    <div class="algorithm-navigation" style="display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 2rem; background: var(--bg-primary); border-top: 1px solid var(--border-color);">
+                        <button class="nav-btn prev-btn" onclick="changeAlgorithmSlide(-1)" style="background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 500; transition: all 0.3s ease; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </button>
+
+                        <div class="slide-indicators" style="display: flex; gap: 0.5rem;">
+                            <span class="indicator active" onclick="currentAlgorithmSlide(1)" style="width: 12px; height: 12px; border-radius: 50%; background: var(--primary-color); cursor: pointer; transition: all 0.3s ease;"></span>
+                            <span class="indicator" onclick="currentAlgorithmSlide(2)" style="width: 12px; height: 12px; border-radius: 50%; background: var(--border-color); cursor: pointer; transition: all 0.3s ease;"></span>
+                            <span class="indicator" onclick="currentAlgorithmSlide(3)" style="width: 12px; height: 12px; border-radius: 50%; background: var(--border-color); cursor: pointer; transition: all 0.3s ease;"></span>
+                            <span class="indicator" onclick="currentAlgorithmSlide(4)" style="width: 12px; height: 12px; border-radius: 50%; background: var(--border-color); cursor: pointer; transition: all 0.3s ease;"></span>
+                        </div>
+
+                        <div class="slide-counter" id="algorithm-slide-counter" style="color: var(--text-light); font-weight: 500;">
+                            <span id="current-algo-slide">1</span> / 4
+                        </div>
+
+                        <button class="nav-btn next-btn" onclick="changeAlgorithmSlide(1)" style="background: var(--primary-color); border: 1px solid var(--primary-color); color: white; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 500; transition: all 0.3s ease; display: flex; align-items: center; gap: 0.5rem;">
+                            Next <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
 
 
             <!-- Page Navigation -->
@@ -1868,6 +2276,73 @@
 
             // Initialize slide presentation
             initializeSlides();
+        });
+
+        // Algorithm slideshow functionality
+        let currentAlgoSlide = 1;
+        const totalAlgoSlides = 4;
+
+        function changeAlgorithmSlide(direction) {
+            const newSlide = currentAlgoSlide + direction;
+            if (newSlide >= 1 && newSlide <= totalAlgoSlides) {
+                currentAlgorithmSlide(newSlide);
+            }
+        }
+
+        function currentAlgorithmSlide(slideNumber) {
+            // Hide all algorithm slides
+            for (let i = 1; i <= totalAlgoSlides; i++) {
+                const slide = document.getElementById(`algo-slide${i}`);
+                if (slide) {
+                    slide.style.display = 'none';
+                }
+            }
+
+            // Show the selected slide
+            const selectedSlide = document.getElementById(`algo-slide${slideNumber}`);
+            if (selectedSlide) {
+                selectedSlide.style.display = 'block';
+            }
+
+            // Update current slide number
+            currentAlgoSlide = slideNumber;
+
+            // Update slide counter
+            const slideCounter = document.getElementById('current-algo-slide');
+            if (slideCounter) {
+                slideCounter.textContent = slideNumber;
+            }
+
+            // Update indicators
+            const indicators = document.querySelectorAll('.algorithm-navigation .indicator');
+            indicators.forEach((indicator, index) => {
+                if (index + 1 === slideNumber) {
+                    indicator.style.background = 'var(--primary-color)';
+                    indicator.classList.add('active');
+                } else {
+                    indicator.style.background = 'var(--border-color)';
+                    indicator.classList.remove('active');
+                }
+            });
+
+            // Update navigation buttons
+            const prevBtn = document.querySelector('.algorithm-navigation .prev-btn');
+            const nextBtn = document.querySelector('.algorithm-navigation .next-btn');
+
+            if (prevBtn) {
+                prevBtn.style.opacity = slideNumber === 1 ? '0.5' : '1';
+                prevBtn.style.cursor = slideNumber === 1 ? 'not-allowed' : 'pointer';
+            }
+
+            if (nextBtn) {
+                nextBtn.style.opacity = slideNumber === totalAlgoSlides ? '0.5' : '1';
+                nextBtn.style.cursor = slideNumber === totalAlgoSlides ? 'not-allowed' : 'pointer';
+            }
+        }
+
+        // Initialize algorithm slideshow on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            currentAlgorithmSlide(1);
         });
 
         // Slide presentation functionality
@@ -1946,7 +2421,7 @@
             });
 
             // Update slide counter text
-            const counter = document.querySelector('.slide-counter');
+            const counter = document.getElementById('pipeline-slide-counter');
             if (counter) {
                 counter.textContent = `${currentSlide + 1} / ${totalSlides}`;
                 counter.style.fontWeight = '700';
