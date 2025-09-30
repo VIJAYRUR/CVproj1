@@ -1,0 +1,2139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Datasets - Accessible Food Label Reading with Computer Vision</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #1a365d;
+            --secondary-color: #2d3748;
+            --accent-color: #4a5568;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --bg-primary: #f7fafc;
+            --bg-secondary: #ffffff;
+            --border-color: #e2e8f0;
+            --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --shadow-medium: 0 8px 25px rgba(0, 0, 0, 0.12);
+            --sidebar-width: 280px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background-color: var(--bg-primary);
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: var(--sidebar-width);
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            box-shadow: var(--shadow-soft);
+            transform: translateX(0);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .sidebar-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .sidebar-nav {
+            padding: 1rem 0;
+        }
+
+        .nav-item {
+            margin: 0.25rem 0;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            color: var(--text-dark);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background-color: var(--bg-primary);
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+        }
+
+        .nav-link.active {
+            background-color: var(--bg-primary);
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .nav-link i {
+            margin-right: 0.75rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            transition: margin-left 0.3s ease;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        .top-navbar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 1.5rem;
+            box-shadow: var(--shadow-soft);
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+
+        .sidebar-toggle {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+
+        .sidebar-toggle:hover {
+            background-color: var(--bg-primary);
+        }
+
+        .content-area {
+            padding: 2rem;
+        }
+
+        .page-header {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .page-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .content-section {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-color);
+        }
+
+        /* Interactive Presentation Styles */
+        .dataset-presentation {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: var(--shadow-medium);
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .presentation-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .presentation-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .presentation-container {
+            position: relative;
+            min-height: 700px;
+            max-height: 80vh;
+            overflow: hidden;
+        }
+
+        .content-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: var(--shadow-medium);
+            border: 1px solid var(--border-color);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(50px);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 1;
+        }
+
+        .content-slide.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(0);
+            z-index: 2;
+        }
+
+        .content-slide.prev {
+            transform: translateX(-50px);
+            opacity: 0;
+            visibility: hidden;
+            z-index: 0;
+        }
+
+        .content-slide::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+        }
+
+        .slide-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .slide-number {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .slide-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .slide-goal {
+            background: var(--bg-primary);
+            border-left: 4px solid var(--primary-color);
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .slide-goal strong {
+            color: var(--primary-color);
+        }
+
+        /* Reading Time */
+        .reading-time {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-light);
+            font-size: 0.9rem;
+            background: var(--bg-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .reading-time i {
+            color: var(--primary-color);
+        }
+
+        /* Audio Player */
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .audio-player-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .audio-player-btn:hover {
+            background: var(--secondary-color);
+            transform: scale(1.05);
+        }
+
+        .audio-player-container {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 25px;
+            padding: 1rem 1.5rem;
+            box-shadow: var(--shadow-medium);
+            z-index: 1000;
+            min-width: 300px;
+        }
+
+        .audio-player-container.active {
+            display: block;
+        }
+
+        .audio-player-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .audio-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .close-audio-btn {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-audio-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .audio-controls-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .audio-play-pause {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .audio-play-pause:hover {
+            background: var(--secondary-color);
+        }
+
+        .audio-progress-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .audio-time {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            min-width: 35px;
+        }
+
+        .audio-progress {
+            flex: 1;
+            height: 4px;
+            background: var(--border-color);
+            border-radius: 2px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .audio-progress-bar {
+            height: 100%;
+            background: var(--primary-color);
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+
+        /* Interactive Cards */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .info-card {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .info-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .info-card h4 {
+            font-family: 'Poppins', sans-serif;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-card h4 i {
+            color: var(--accent-color);
+        }
+
+        /* Dataset Cards */
+        .dataset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .dataset-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-soft);
+            position: relative;
+            height: 380px;
+            perspective: 1000px;
+        }
+
+        .dataset-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.8s;
+            transform-style: preserve-3d;
+        }
+
+        .dataset-card:hover .dataset-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .dataset-card-front, .dataset-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .dataset-card-front {
+            background: var(--bg-secondary);
+        }
+
+        .dataset-card-back {
+            background: var(--bg-primary);
+            transform: rotateY(180deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .dataset-card-front::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            border-radius: 12px 12px 0 0;
+        }
+
+        .dataset-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .image-credits {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            z-index: 10;
+            white-space: nowrap;
+        }
+
+        .dataset-card-front p {
+            font-size: 0.9rem;
+            line-height: 1.4;
+            margin: 0.5rem 0;
+        }
+
+        .dataset-card-front .dataset-meta {
+            font-size: 0.85rem;
+            margin: 0.75rem 0;
+        }
+
+        .dataset-card-front .dataset-limitation {
+            font-size: 0.85rem;
+            margin-top: auto;
+            padding: 0.75rem;
+            background: rgba(255, 193, 7, 0.1);
+            border-left: 3px solid #ffc107;
+            border-radius: 4px;
+        }
+
+        .hover-hint {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .dataset-card:hover .hover-hint {
+            opacity: 0;
+        }
+
+        .dataset-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .dataset-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .dataset-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .dataset-meta {
+            background: var(--bg-primary);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-left: 3px solid var(--accent-color);
+        }
+
+        .dataset-limitation {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .dataset-limitation strong {
+            color: #e65100;
+        }
+
+        /* Example Box */
+        .example-box {
+            background: var(--bg-primary);
+            border-left: 4px solid var(--accent-color);
+            border-radius: 0 8px 8px 0;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .example-box h5 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .example-box h5 i {
+            color: var(--accent-color);
+        }
+
+        /* Sample Images Grid */
+        .sample-images {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .image-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-soft);
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .image-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .image-placeholder {
+            width: 100%;
+            height: 200px;
+            background: var(--bg-primary);
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            color: var(--text-light);
+            font-size: 3rem;
+        }
+
+        .image-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .image-description {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        /* Navigation Controls */
+        .slide-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 2rem;
+            padding: 1.5rem 0;
+        }
+
+        .slide-nav-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .slide-nav-btn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .slide-nav-btn:disabled {
+            background: var(--text-light);
+            cursor: not-allowed;
+            transform: none;
+            opacity: 0.5;
+        }
+
+        .slide-nav-btn:active {
+            transform: scale(0.95);
+        }
+
+        .slide-indicator {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .indicator-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--border-color);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .indicator-dot.active {
+            background: var(--primary-color);
+            transform: scale(1.3);
+            box-shadow: 0 0 0 3px rgba(26, 54, 93, 0.2);
+        }
+
+        .indicator-dot:hover {
+            background: var(--accent-color);
+            transform: scale(1.1);
+        }
+
+        .slide-counter {
+            color: var(--text-light);
+            font-weight: 600;
+            margin: 0 1rem;
+        }
+
+        /* Metrics Cards */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .metric-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-soft);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            border-radius: 12px 12px 0 0;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .metric-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .metric-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .metric-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        /* Research Gap Box */
+        .research-gap {
+            background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+            border-left: 4px solid var(--accent-color);
+            text-align: center;
+        }
+
+        .research-gap h4 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .research-gap h4 i {
+            color: var(--accent-color);
+        }
+
+        /* Quiz Styles */
+        .quiz-content-slide {
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 1rem;
+        }
+
+        .quiz-intro-slide {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Custom scrollbar for quiz content */
+        .quiz-content-slide::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .quiz-content-slide::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+            border-radius: 4px;
+        }
+
+        .quiz-content-slide::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        .quiz-content-slide::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary-color);
+        }
+
+        .quiz-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .quiz-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-light);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .start-quiz-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 1rem 2.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-soft);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .start-quiz-btn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .quiz-container {
+            background: var(--bg-primary);
+            border-radius: 16px;
+            padding: 2.5rem;
+            margin-top: 2rem;
+            color: var(--text-dark);
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-color);
+        }
+
+        .question-card {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .question-card:hover {
+            box-shadow: var(--shadow-soft);
+        }
+
+        /* Compact quiz layout */
+        .quiz-content-slide .question-card {
+            margin-bottom: 1rem;
+        }
+
+        .quiz-content-slide .slide-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .quiz-content-slide .quiz-actions {
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .question-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .question-number {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .question-type {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .question-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .options-container {
+            display: grid;
+            gap: 0.8rem;
+        }
+
+        .option {
+            background: var(--bg-primary);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .option:hover {
+            border-color: var(--primary-color);
+            background: var(--bg-secondary);
+        }
+
+        .option.selected {
+            border-color: var(--primary-color);
+            background: var(--bg-secondary);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .option.correct {
+            border-color: #4caf50;
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .option.incorrect {
+            border-color: #f44336;
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .option-letter {
+            width: 30px;
+            height: 30px;
+            background: var(--text-light);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .option.correct .option-letter {
+            background: #4caf50;
+        }
+
+        .option.incorrect .option-letter {
+            background: #f44336;
+        }
+
+        .option.selected .option-letter {
+            background: var(--primary-color);
+        }
+
+        .true-false-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .tf-option {
+            background: var(--bg-primary);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .tf-option:hover {
+            border-color: var(--primary-color);
+            background: var(--bg-secondary);
+        }
+
+        .tf-option.selected {
+            border-color: var(--primary-color);
+            background: var(--bg-secondary);
+            color: var(--primary-color);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .tf-option.correct {
+            border-color: #4caf50;
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .tf-option.incorrect {
+            border-color: #f44336;
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .quiz-actions {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .quiz-button {
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .check-answers-btn {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .check-answers-btn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .reset-btn {
+            background: var(--text-light);
+            color: white;
+        }
+
+        .reset-btn:hover {
+            background: var(--accent-color);
+            transform: translateY(-2px);
+        }
+
+        .quiz-results {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-top: 2rem;
+            text-align: center;
+            display: none;
+        }
+
+        .score-display {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .score-message {
+            font-size: 1.1rem;
+            color: var(--text-dark);
+        }
+
+        /* Navigation Buttons */
+        .page-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 3rem;
+            padding: 1.5rem 0;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .nav-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .nav-button:hover {
+            background: var(--secondary-color);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .content-area {
+                padding: 1rem;
+            }
+            
+            .page-header {
+                padding: 1.5rem;
+            }
+            
+            .page-title {
+                font-size: 2rem;
+            }
+            
+            .page-navigation {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2 class="sidebar-title">Accessible Food Label Reading</h2>
+        </div>
+        <div class="sidebar-nav">
+            <div class="nav-item">
+                <a href="introduction.html" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    Introduction
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="techniques.html" class="nav-link">
+                    <i class="fas fa-cogs"></i>
+                    Techniques
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="interaction.html" class="nav-link">
+                    <i class="fas fa-hand-pointer"></i>
+                    Interaction
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="datasets.html" class="nav-link active">
+                    <i class="fas fa-database"></i>
+                    Datasets
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="challenges.html" class="nav-link">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Challenges
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="conclusion.html" class="nav-link">
+                    <i class="fas fa-flag-checkered"></i>
+                    Conclusion
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="conclusion.html#quiz" class="nav-link">
+                    <i class="fas fa-graduation-cap"></i>
+                    Final Quiz
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="bibliography.html" class="nav-link">
+                    <i class="fas fa-book"></i>
+                    Bibliography
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Audio Player Container -->
+    <div class="audio-player-container" id="audioPlayerContainer">
+        <div class="audio-player-header">
+            <span class="audio-title">Datasets Audio</span>
+            <button class="close-audio-btn" id="closeAudioBtn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="audio-controls-container">
+            <button class="audio-play-pause" id="audioPlayPause">
+                <i class="fas fa-play"></i>
+            </button>
+            <div class="audio-progress-container">
+                <span class="audio-time" id="currentTime">0:00</span>
+                <div class="audio-progress" id="audioProgress">
+                    <div class="audio-progress-bar" id="audioProgressBar"></div>
+                </div>
+                <span class="audio-time" id="totalTime">0:00</span>
+            </div>
+        </div>
+        <audio id="pageAudio" preload="metadata">
+            <source src="audio/datasets.mp4" type="audio/mp4">
+            <source src="audio/datasets.mp3" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <!-- Top Navigation Bar -->
+        <nav class="top-navbar">
+            <div class="d-flex justify-content-between align-items-center">
+                <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar navigation">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="audio-controls">
+                    <div class="reading-time">
+                        <i class="fas fa-clock"></i>
+                        <span>5 min read</span>
+                    </div>
+                    <button class="audio-player-btn" id="audioPlayerBtn" aria-label="Play page audio">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Content Area -->
+        <div class="content-area">
+            <div class="page-header">
+                <h1 class="page-title">Datasets & Training Data</h1>
+                <p style="text-align: center; color: var(--text-light); margin-top: 1rem; font-size: 1.1rem;">
+                    Understanding the critical role of datasets in building accessible food label readers
+                </p>
+            </div>
+
+            <!-- Interactive Presentation -->
+            <div class="dataset-presentation">
+                <div class="presentation-header">
+                    <h2 class="presentation-title">Why Datasets Matter</h2>
+                </div>
+
+                <div class="presentation-container">
+                    <!-- Slide 1: Why Datasets Matter -->
+                    <div class="content-slide active" id="slide1">
+                        <div class="slide-header">
+                            <div class="slide-number">1</div>
+                            <h2 class="slide-title">Why Datasets Matter</h2>
+                        </div>
+
+                        <div class="slide-goal">
+                            <strong>Goal:</strong> Understand why quality datasets are crucial for accessible food label reading systems.
+                        </div>
+
+                        <p>When building food label readers for blind or low-vision users, the algorithm itself is only half the story. The other half is what kind of data it learns from.</p>
+
+                        <div class="example-box">
+                            <h5><i class="fas fa-lightbulb"></i> Think about it this way:</h5>
+                            <p>A student who only practices math problems on clean worksheets will struggle in a noisy exam hall.</p>
+                            <p>Similarly, an OCR model trained only on perfectly scanned labels will fail when faced with real supermarket photos full of glare, shadows, and crumpled packaging.</p>
+                        </div>
+
+                        <div class="info-grid">
+                            <div class="info-card">
+                                <h4><i class="fas fa-exclamation-triangle"></i> Real-World Challenges</h4>
+                                <ul>
+                                    <li>Glare and shadows on packaging</li>
+                                    <li>Curved and crumpled labels</li>
+                                    <li>Various lighting conditions</li>
+                                    <li>Different fonts and sizes</li>
+                                </ul>
+                            </div>
+
+                            <div class="info-card">
+                                <h4><i class="fas fa-shield-alt"></i> Safety Implications</h4>
+                                <p>For blind users, these failures matter a lot — if the system misreads an expiry date or misses an allergen, it isn't just inconvenient, <strong>it could be unsafe</strong>.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slide 2: Key Datasets in Research -->
+                    <div class="content-slide" id="slide2">
+                        <div class="slide-header">
+                            <div class="slide-number">2</div>
+                            <h2 class="slide-title">Key Datasets in Research</h2>
+                        </div>
+
+                        <div class="slide-goal">
+                            <strong>Goal:</strong> Explore the three main types of datasets used in food label accessibility research.
+                        </div>
+
+                        <p style="text-align: center; color: var(--text-light); margin-bottom: 1.5rem; font-style: italic;">
+                            💡 Hover over each card to see sample images from the datasets
+                        </p>
+
+                        <div class="dataset-grid">
+                            <div class="dataset-card">
+                                <div class="hover-hint">Hover to see sample image</div>
+                                <div class="dataset-card-inner">
+                                    <div class="dataset-card-front">
+                                        <div class="dataset-header">
+                                            <div class="dataset-icon">
+                                                <i class="fas fa-chart-bar"></i>
+                                            </div>
+                                            <h3 class="dataset-title">1. Nutrition Label Images</h3>
+                                        </div>
+
+                                        <div class="dataset-meta">
+                                            <strong>Used in:</strong> <a href="bibliography.html#ref1" style="color: var(--primary-color); text-decoration: none;">Saputra et al. (2024)</a> [1]
+                                        </div>
+
+                                        <p>Dataset of food packaging focused on nutrition facts tables.</p>
+                                        <p><strong>Achievement:</strong> Helped test bounding-box OCR pipelines, improving recognition of calories, sugar, and fat.</p>
+
+                                        <div class="dataset-limitation">
+                                            <strong>Limitation:</strong> Accuracy dropped when fonts were small or labels were curved.
+                                        </div>
+                                    </div>
+                                    <div class="dataset-card-back">
+                                        <img src="images/Nutrition Label.png" alt="Nutrition Label Sample" class="dataset-image">
+                                        <div class="image-credits">Credits: Gemini 2.5 Flash</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="dataset-card">
+                                <div class="hover-hint">Hover to see sample image</div>
+                                <div class="dataset-card-inner">
+                                    <div class="dataset-card-front">
+                                        <div class="dataset-header">
+                                            <div class="dataset-icon">
+                                                <i class="fas fa-calendar-alt"></i>
+                                            </div>
+                                            <h3 class="dataset-title">2. Expiration Date Images</h3>
+                                        </div>
+
+                                        <div class="dataset-meta">
+                                            <strong>Used in:</strong> <a href="bibliography.html#ref2" style="color: var(--primary-color); text-decoration: none;">Grumeza et al. (2024)</a> [2]
+                                        </div>
+
+                                        <p>Photos of product packages with date stamps.</p>
+                                        <p><strong>Key challenge:</strong> Format variation ("06/25", "Best before June 2025").</p>
+                                        <p><strong>Discovery:</strong> Dataset showed OCR alone often failed → combining with LLMs improved interpretation.</p>
+                                    </div>
+                                    <div class="dataset-card-back">
+                                        <img src="images/Expiry Date.png" alt="Expiry Date Sample" class="dataset-image">
+                                        <div class="image-credits">Credits: Gemini 2.5 Flash</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="dataset-card">
+                                <div class="hover-hint">Hover to see sample image</div>
+                                <div class="dataset-card-inner">
+                                    <div class="dataset-card-front">
+                                        <div class="dataset-header">
+                                            <div class="dataset-icon">
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                            </div>
+                                            <h3 class="dataset-title">3. Allergen Ingredient Lists</h3>
+                                        </div>
+
+                                        <div class="dataset-meta">
+                                            <strong>Used in:</strong> <a href="bibliography.html#ref5" style="color: var(--primary-color); text-decoration: none;">Johan & Rizal (2021)</a> [5]
+                                        </div>
+
+                                        <p>Collected ingredient lists with allergens like milk, soy, and nuts.</p>
+                                        <p><strong>Method:</strong> Paired with OCR output + keyword matching for allergen detection.</p>
+
+                                        <div class="dataset-limitation">
+                                            <strong>Limitation:</strong> Dependent on clean OCR — missed allergens if text was misread.
+                                        </div>
+                                    </div>
+                                    <div class="dataset-card-back">
+                                        <img src="images/Allergens.png" alt="Allergens Sample" class="dataset-image">
+                                        <div class="image-credits">Credits: Gemini 2.5 Flash</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slide 3: Sample Images -->
+                    <div class="content-slide" id="slide3">
+                        <div class="slide-header">
+                            <div class="slide-number">3</div>
+                            <h2 class="slide-title">Dataset Sample Images</h2>
+                        </div>
+
+                        <div class="slide-goal">
+                            <strong>Goal:</strong> Visualize the three main types of food label data used in research.
+                        </div>
+
+                        <p style="text-align: center; color: var(--text-light); margin-bottom: 2rem;">
+                            These sample images represent the diverse challenges that datasets must capture for robust food label reading systems.
+                        </p>
+
+                        <div class="sample-images">
+                            <div class="image-card">
+                                <div class="image-placeholder">
+                                    <i class="fas fa-chart-bar"></i>
+                                </div>
+                                <h4 class="image-title">Nutrition Facts Table</h4>
+                                <p class="image-description">
+                                    Structured nutritional information with calories, fats, sugars, and other dietary values.
+                                    Challenges include small fonts and tabular layout recognition.
+                                </p>
+                            </div>
+
+                            <div class="image-card">
+                                <div class="image-placeholder">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </div>
+                                <h4 class="image-title">Expiration Date</h4>
+                                <p class="image-description">
+                                    Date stamps in various formats and locations on packaging.
+                                    Requires interpretation of ambiguous date formats and context understanding.
+                                </p>
+                            </div>
+
+                            <div class="image-card">
+                                <div class="image-placeholder">
+                                    <i class="fas fa-list-ul"></i>
+                                </div>
+                                <h4 class="image-title">Allergen Ingredient List</h4>
+                                <p class="image-description">
+                                    Ingredient lists containing potential allergens like nuts, dairy, or soy.
+                                    Critical for user safety and requires accurate text recognition.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="example-box">
+                            <h5><i class="fas fa-info-circle"></i> Note</h5>
+                            <p>Sample images will be added to demonstrate the variety and complexity of real-world food label data that these systems must handle effectively.</p>
+                        </div>
+                    </div>
+
+                    <!-- Slide 4: Evaluation Metrics -->
+                    <div class="content-slide" id="slide4">
+                        <div class="slide-header">
+                            <div class="slide-number">4</div>
+                            <h2 class="slide-title">Evaluation Metrics</h2>
+                        </div>
+
+                        <div class="slide-goal">
+                            <strong>Goal:</strong> Understand how dataset performance is measured across different research studies.
+                        </div>
+
+                        <p>Across these works, performance is measured using:</p>
+
+                        <div class="metrics-grid">
+                            <div class="metric-card">
+                                <div class="metric-header">
+                                    <div class="metric-icon">
+                                        <i class="fas fa-spell-check"></i>
+                                    </div>
+                                    <h3 class="metric-title">Character/Word Error Rate</h3>
+                                </div>
+                                <p><strong>CER/WER:</strong> How accurately text is recognized at the character and word level.</p>
+                                <div style="background: var(--bg-primary); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                                    <p style="margin: 0; font-family: 'Courier New', monospace;">
+                                        CER = (Substitutions + Deletions + Insertions) / Total Characters
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="metric-card">
+                                <div class="metric-header">
+                                    <div class="metric-icon">
+                                        <i class="fas fa-bullseye"></i>
+                                    </div>
+                                    <h3 class="metric-title">Task Accuracy</h3>
+                                </div>
+                                <p><strong>Percentage</strong> of correctly identified nutrition values, expiry dates, or allergens.</p>
+                                <ul style="margin-top: 1rem;">
+                                    <li>Nutrition value extraction accuracy</li>
+                                    <li>Date interpretation correctness</li>
+                                    <li>Allergen detection precision</li>
+                                </ul>
+                            </div>
+
+                            <div class="metric-card">
+                                <div class="metric-header">
+                                    <div class="metric-icon">
+                                        <i class="fas fa-users"></i>
+                                    </div>
+                                    <h3 class="metric-title">Usability Scores</h3>
+                                </div>
+                                <p><a href="bibliography.html#ref4" style="color: var(--primary-color); text-decoration: none;">Bhagat et al. (2023)</a> [4] showed blind users often cared more about <strong>speed and clarity</strong> than absolute accuracy.</p>
+                                <div style="background: #e8f5e8; padding: 1rem; border-radius: 8px; margin-top: 1rem; border-left: 3px solid #4caf50;">
+                                    <p style="margin: 0; color: #2e7d32;"><strong>Key Finding:</strong> User experience metrics often matter more than technical accuracy metrics.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slide 5: Key Takeaway -->
+                    <div class="content-slide" id="slide5">
+                        <div class="slide-header">
+                            <div class="slide-number">5</div>
+                            <h2 class="slide-title">Key Takeaway</h2>
+                        </div>
+
+                        <div class="slide-goal">
+                            <strong>Goal:</strong> Understand the current state and future needs of food label datasets.
+                        </div>
+
+                        <div class="research-gap">
+                            <h4><i class="fas fa-puzzle-piece"></i> The Dataset Fragmentation Problem</h4>
+                            <p style="font-size: 1.1rem; margin-bottom: 2rem;">
+                                Datasets for food label accessibility are still <strong>fragmented</strong>: nutrition tables here, expiry dates there, allergen lists elsewhere.
+                            </p>
+
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 2rem 0;">
+                                <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+                                    <i class="fas fa-chart-bar" style="font-size: 2rem; color: var(--primary-color); margin-bottom: 0.5rem;"></i>
+                                    <p style="margin: 0; font-weight: 600;">Nutrition Tables</p>
+                                </div>
+                                <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+                                    <i class="fas fa-calendar-alt" style="font-size: 2rem; color: var(--primary-color); margin-bottom: 0.5rem;"></i>
+                                    <p style="margin: 0; font-weight: 600;">Expiry Dates</p>
+                                </div>
+                                <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+                                    <i class="fas fa-exclamation-triangle" style="font-size: 2rem; color: var(--primary-color); margin-bottom: 0.5rem;"></i>
+                                    <p style="margin: 0; font-weight: 600;">Allergen Lists</p>
+                                </div>
+                            </div>
+
+                            <p style="font-size: 1.1rem;">
+                                Each contributes an important piece, but a <strong>unified dataset capturing all aspects is missing</strong> — and this is a major research gap highlighted across papers [1][2][5].
+                            </p>
+                        </div>
+
+                        <div class="info-grid">
+                            <div class="info-card">
+                                <h4><i class="fas fa-lightbulb"></i> What's Needed</h4>
+                                <ul>
+                                    <li>Comprehensive multi-aspect datasets</li>
+                                    <li>Real-world condition variations</li>
+                                    <li>Standardized evaluation metrics</li>
+                                    <li>User-centered performance measures</li>
+                                </ul>
+                            </div>
+
+                            <div class="info-card">
+                                <h4><i class="fas fa-road"></i> Future Directions</h4>
+                                <ul>
+                                    <li>Unified dataset creation initiatives</li>
+                                    <li>Cross-domain evaluation protocols</li>
+                                    <li>Accessibility-focused benchmarks</li>
+                                    <li>Community-driven data collection</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slide 6: Quiz -->
+                    <div class="content-slide" id="slide6">
+                        <!-- Quiz Introduction (shown by default) -->
+                        <div class="quiz-intro-slide" id="quizIntroSlide">
+                            <div class="slide-header">
+                                <div class="slide-number">🧠</div>
+                                <h2 class="slide-title">Test Your Knowledge</h2>
+                            </div>
+
+                            <div class="slide-goal">
+                                <strong>Goal:</strong> Reinforce your understanding of dataset importance and challenges.
+                            </div>
+
+                            <div style="text-align: center; padding: 2rem;">
+                                <p style="font-size: 1.1rem; color: var(--text-light); margin-bottom: 2rem;">
+                                    Ready to test your understanding of datasets and training data for food label reading?<br>
+                                    Take this quick 2-question quiz to reinforce what you've learned.
+                                </p>
+                                <button class="start-quiz-btn" onclick="startQuizInSlide()">
+                                    <i class="fas fa-play"></i>
+                                    Start Quiz
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Quiz Content (hidden by default) -->
+                        <div class="quiz-content-slide" id="quizContentSlide" style="display: none; position: relative;">
+                            <div class="slide-header">
+                                <div class="slide-number">🧠</div>
+                                <h2 class="slide-title">Quiz: Datasets & Training Data</h2>
+                            </div>
+
+                            <!-- Question 1 -->
+                            <div class="question-card">
+                                <div class="question-header">
+                                    <div class="question-number">1</div>
+                                    <span class="question-type">MCQ</span>
+                                </div>
+                                <div class="question-text">
+                                    Why is it important for OCR models used in food label reading to be trained on real supermarket datasets instead of clean lab images?
+                                </div>
+                                <div class="options-container">
+                                    <div class="option" data-question="1" data-option="A">
+                                        <div class="option-letter">A</div>
+                                        <span>Real supermarket images are more colorful.</span>
+                                    </div>
+                                    <div class="option" data-question="1" data-option="B">
+                                        <div class="option-letter">B</div>
+                                        <span>Clean lab images make the model too accurate.</span>
+                                    </div>
+                                    <div class="option" data-question="1" data-option="C" data-correct="true">
+                                        <div class="option-letter">C</div>
+                                        <span>Real supermarket datasets capture challenges like glare, curved packaging, and small fonts.</span>
+                                    </div>
+                                    <div class="option" data-question="1" data-option="D">
+                                        <div class="option-letter">D</div>
+                                        <span>Lab datasets already cover allergens and expiry dates.</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Question 2 -->
+                            <div class="question-card">
+                                <div class="question-header">
+                                    <div class="question-number">2</div>
+                                    <span class="question-type">True/False</span>
+                                </div>
+                                <div class="question-text">
+                                    A dataset built only for nutrition tables can also reliably detect allergens and expiry dates.
+                                </div>
+                                <div class="true-false-container">
+                                    <div class="tf-option" data-question="2" data-option="true">
+                                        <i class="fas fa-check" style="color: #4caf50; margin-right: 0.5rem;"></i>
+                                        True
+                                    </div>
+                                    <div class="tf-option" data-question="2" data-option="false" data-correct="true">
+                                        <i class="fas fa-times" style="color: #f44336; margin-right: 0.5rem;"></i>
+                                        False
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="quiz-actions">
+                                <button class="quiz-button check-answers-btn" onclick="checkAnswersInSlide()">
+                                    <i class="fas fa-check-circle" style="margin-right: 0.5rem;"></i>
+                                    Check Answers
+                                </button>
+                                <button class="quiz-button reset-btn" onclick="resetQuizInSlide()">
+                                    <i class="fas fa-redo" style="margin-right: 0.5rem;"></i>
+                                    Reset Quiz
+                                </button>
+                            </div>
+
+                            <div class="quiz-results" id="quizResultsSlide" style="display: none;">
+                                <div class="score-display" id="scoreDisplaySlide"></div>
+                                <div class="score-message" id="scoreMessageSlide"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide Navigation Controls -->
+                <div class="slide-controls">
+                    <button class="slide-nav-btn" id="prevBtn" onclick="changeSlide(-1)">
+                        <i class="fas fa-chevron-left"></i>
+                        Previous
+                    </button>
+
+                    <div class="slide-indicator">
+                        <div class="indicator-dot active" onclick="goToSlide(1)"></div>
+                        <div class="indicator-dot" onclick="goToSlide(2)"></div>
+                        <div class="indicator-dot" onclick="goToSlide(3)"></div>
+                        <div class="indicator-dot" onclick="goToSlide(4)"></div>
+                        <div class="indicator-dot" onclick="goToSlide(5)"></div>
+                        <div class="indicator-dot" onclick="goToSlide(6)"></div>
+                        <span class="slide-counter">1 / 6</span>
+                    </div>
+
+                    <button class="slide-nav-btn" id="nextBtn" onclick="changeSlide(1)">
+                        Next
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Page Navigation -->
+            <div class="page-navigation">
+                <a href="interaction.html" class="nav-button">
+                    <i class="fas fa-arrow-left"></i>
+                    Previous: Interaction
+                </a>
+                <a href="challenges.html" class="nav-button">
+                    Next: Challenges
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        // Sidebar functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+            function toggleSidebar() {
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.toggle('show');
+                    sidebarOverlay.classList.toggle('show');
+                } else {
+                    sidebar.classList.toggle('collapsed');
+                    mainContent.classList.toggle('expanded');
+                }
+            }
+
+            function closeSidebar() {
+                sidebar.classList.remove('show');
+                sidebarOverlay.classList.remove('show');
+            }
+
+            sidebarToggle.addEventListener('click', toggleSidebar);
+            sidebarOverlay.addEventListener('click', closeSidebar);
+
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768) {
+                    sidebar.classList.remove('show');
+                    sidebarOverlay.classList.remove('show');
+                }
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeSidebar();
+                }
+            });
+        });
+
+        // Slide presentation functionality
+        let currentSlide = 1;
+        const totalSlides = 6;
+
+        function updateSlideDisplay() {
+            // Hide all slides
+            for (let i = 1; i <= totalSlides; i++) {
+                const slide = document.getElementById(`slide${i}`);
+                if (slide) {
+                    slide.classList.remove('active', 'prev');
+                    if (i < currentSlide) {
+                        slide.classList.add('prev');
+                    }
+                }
+            }
+
+            // Show current slide
+            const activeSlide = document.getElementById(`slide${currentSlide}`);
+            if (activeSlide) {
+                activeSlide.classList.add('active');
+            }
+
+            // Update indicators
+            const indicators = document.querySelectorAll('.indicator-dot');
+            indicators.forEach((dot, index) => {
+                dot.classList.toggle('active', index + 1 === currentSlide);
+            });
+
+            // Update counter
+            const counter = document.querySelector('.slide-counter');
+            if (counter) {
+                counter.textContent = `${currentSlide} / ${totalSlides}`;
+            }
+
+            // Update navigation buttons
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+
+            if (prevBtn) {
+                prevBtn.disabled = currentSlide === 1;
+            }
+            if (nextBtn) {
+                nextBtn.disabled = currentSlide === totalSlides;
+            }
+        }
+
+        function changeSlide(direction) {
+            const newSlide = currentSlide + direction;
+            if (newSlide >= 1 && newSlide <= totalSlides) {
+                currentSlide = newSlide;
+                updateSlideDisplay();
+            }
+        }
+
+        function goToSlide(slideNumber) {
+            if (slideNumber >= 1 && slideNumber <= totalSlides) {
+                currentSlide = slideNumber;
+                updateSlideDisplay();
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowLeft') {
+                changeSlide(-1);
+            } else if (e.key === 'ArrowRight') {
+                changeSlide(1);
+            }
+        });
+
+        // Quiz functionality
+        function startQuizInSlide() {
+            document.getElementById('quizIntroSlide').style.display = 'none';
+            document.getElementById('quizContentSlide').style.display = 'block';
+        }
+
+        function selectOption(element) {
+            const question = element.getAttribute('data-question');
+            const questionCard = element.closest('.question-card');
+
+            // Remove selection from other options in the same question
+            const otherOptions = questionCard.querySelectorAll('.option, .tf-option');
+            otherOptions.forEach(option => {
+                option.classList.remove('selected');
+            });
+
+            // Select this option
+            element.classList.add('selected');
+        }
+
+        function checkAnswersInSlide() {
+            const questions = document.querySelectorAll('#quizContentSlide .question-card');
+            let correctAnswers = 0;
+            let totalQuestions = questions.length;
+
+            questions.forEach((question, index) => {
+                const selectedOption = question.querySelector('.option.selected, .tf-option.selected');
+                const correctOption = question.querySelector('[data-correct="true"]');
+
+                if (selectedOption && selectedOption.hasAttribute('data-correct')) {
+                    correctAnswers++;
+                    selectedOption.classList.add('correct');
+                } else {
+                    if (selectedOption) {
+                        selectedOption.classList.add('incorrect');
+                    }
+                    if (correctOption) {
+                        correctOption.classList.add('correct');
+                    }
+                }
+            });
+
+            // Show results
+            const resultsDiv = document.getElementById('quizResultsSlide');
+            const scoreDisplay = document.getElementById('scoreDisplaySlide');
+            const scoreMessage = document.getElementById('scoreMessageSlide');
+
+            const percentage = Math.round((correctAnswers / totalQuestions) * 100);
+            scoreDisplay.textContent = `${correctAnswers}/${totalQuestions} (${percentage}%)`;
+
+            if (percentage === 100) {
+                scoreMessage.textContent = "Perfect! You have a solid understanding of dataset importance in food label accessibility.";
+            } else if (percentage >= 50) {
+                scoreMessage.textContent = "Good job! You understand the key concepts about datasets and training data.";
+            } else {
+                scoreMessage.textContent = "Keep learning! Review the slides to better understand dataset challenges and importance.";
+            }
+
+            resultsDiv.style.display = 'block';
+        }
+
+        function resetQuizInSlide() {
+            // Reset all selections and feedback
+            const options = document.querySelectorAll('#quizContentSlide .option, #quizContentSlide .tf-option');
+            options.forEach(option => {
+                option.classList.remove('selected', 'correct', 'incorrect');
+            });
+
+            // Hide results
+            document.getElementById('quizResultsSlide').style.display = 'none';
+        }
+
+        // Add click handlers for quiz options
+        document.addEventListener('DOMContentLoaded', function() {
+            const options = document.querySelectorAll('.option, .tf-option');
+            options.forEach(option => {
+                option.addEventListener('click', function() {
+                    selectOption(this);
+                });
+            });
+        });
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateSlideDisplay();
+
+            // Audio Player Functionality
+            const audioPlayerBtn = document.getElementById('audioPlayerBtn');
+            const audioPlayerContainer = document.getElementById('audioPlayerContainer');
+            const closeAudioBtn = document.getElementById('closeAudioBtn');
+            const pageAudio = document.getElementById('pageAudio');
+            const audioPlayPause = document.getElementById('audioPlayPause');
+            const audioProgress = document.getElementById('audioProgress');
+            const audioProgressBar = document.getElementById('audioProgressBar');
+            const currentTime = document.getElementById('currentTime');
+            const totalTime = document.getElementById('totalTime');
+
+
+            // Open audio player
+            audioPlayerBtn.addEventListener('click', function() {
+                audioPlayerContainer.classList.add('active');
+            });
+
+            // Close audio player
+            closeAudioBtn.addEventListener('click', function() {
+                audioPlayerContainer.classList.remove('active');
+                pageAudio.pause();
+                updatePlayPauseIcon();
+            });
+
+            // Play/Pause functionality
+            audioPlayPause.addEventListener('click', function() {
+                if (pageAudio.paused) {
+                    pageAudio.play();
+                } else {
+                    pageAudio.pause();
+                }
+                updatePlayPauseIcon();
+            });
+
+            // Update play/pause icon
+            function updatePlayPauseIcon() {
+                const icon = audioPlayPause.querySelector('i');
+                if (pageAudio.paused) {
+                    icon.className = 'fas fa-play';
+                } else {
+                    icon.className = 'fas fa-pause';
+                }
+            }
+
+            // Format time
+            function formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+
+            // Update progress bar
+            pageAudio.addEventListener('timeupdate', function() {
+                const progress = (pageAudio.currentTime / pageAudio.duration) * 100;
+                audioProgressBar.style.width = progress + '%';
+                currentTime.textContent = formatTime(pageAudio.currentTime);
+            });
+
+            // Set total time when metadata loads
+            pageAudio.addEventListener('loadedmetadata', function() {
+                totalTime.textContent = formatTime(pageAudio.duration);
+            });
+
+            // Click on progress bar to seek
+            audioProgress.addEventListener('click', function(e) {
+                const rect = audioProgress.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const width = rect.width;
+                const clickTime = (clickX / width) * pageAudio.duration;
+                pageAudio.currentTime = clickTime;
+            });
+
+            // Auto-update play/pause icon when audio ends
+            pageAudio.addEventListener('ended', function() {
+                updatePlayPauseIcon();
+            });
+        });
+    </script>
+</body>
+</html>

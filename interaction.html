@@ -1,0 +1,2101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interaction - Accessible Food Label Reading with Computer Vision</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #1a365d;
+            --secondary-color: #2d3748;
+            --accent-color: #4a5568;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --bg-primary: #f7fafc;
+            --bg-secondary: #ffffff;
+            --border-color: #e2e8f0;
+            --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --shadow-medium: 0 8px 25px rgba(0, 0, 0, 0.12);
+            --sidebar-width: 280px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background-color: var(--bg-primary);
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: var(--sidebar-width);
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            box-shadow: var(--shadow-soft);
+            transform: translateX(0);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .sidebar-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .sidebar-nav {
+            padding: 1rem 0;
+        }
+
+        .nav-item {
+            margin: 0.25rem 0;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            color: var(--text-dark);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background-color: var(--bg-primary);
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+        }
+
+        .nav-link.active {
+            background-color: var(--bg-primary);
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .nav-link i {
+            margin-right: 0.75rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            transition: margin-left 0.3s ease;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        .top-navbar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 1.5rem;
+            box-shadow: var(--shadow-soft);
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+
+        .sidebar-toggle {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+
+        .sidebar-toggle:hover {
+            background-color: var(--bg-primary);
+        }
+
+        .content-area {
+            padding: 2rem;
+        }
+
+        .page-header {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .page-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .content-section {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-color);
+        }
+
+        /* Interactive Presentation Styles */
+        .interaction-presentation {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: var(--shadow-medium);
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .presentation-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .presentation-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .presentation-container {
+            position: relative;
+            min-height: 700px;
+            max-height: 80vh;
+            overflow: hidden;
+        }
+
+        .content-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: var(--shadow-medium);
+            border: 1px solid var(--border-color);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(50px);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 1;
+        }
+
+        .content-slide.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(0);
+            z-index: 2;
+        }
+
+        .content-slide.prev {
+            transform: translateX(-50px);
+            opacity: 0;
+            visibility: hidden;
+            z-index: 0;
+        }
+
+        .content-slide::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+        }
+
+        .slide-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .slide-number {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .slide-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .slide-goal {
+            background: var(--bg-primary);
+            border-left: 4px solid var(--primary-color);
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .slide-goal strong {
+            color: var(--primary-color);
+        }
+
+        /* Reading Time */
+        .reading-time {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-light);
+            font-size: 0.9rem;
+            background: var(--bg-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .reading-time i {
+            color: var(--primary-color);
+        }
+
+        /* Audio Player */
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .audio-player-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .audio-player-btn:hover {
+            background: var(--secondary-color);
+            transform: scale(1.05);
+        }
+
+        .audio-player-container {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 25px;
+            padding: 1rem 1.5rem;
+            box-shadow: var(--shadow-medium);
+            z-index: 1000;
+            min-width: 300px;
+        }
+
+        .audio-player-container.active {
+            display: block;
+        }
+
+        .audio-player-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .audio-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .close-audio-btn {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-audio-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .audio-controls-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .audio-play-pause {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .audio-play-pause:hover {
+            background: var(--secondary-color);
+        }
+
+        .audio-progress-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .audio-time {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            min-width: 35px;
+        }
+
+        .audio-progress {
+            flex: 1;
+            height: 4px;
+            background: var(--border-color);
+            border-radius: 2px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .audio-progress-bar {
+            height: 100%;
+            background: var(--primary-color);
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+
+        /* Interactive Cards */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .info-card {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .info-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .info-card h4 {
+            font-family: 'Poppins', sans-serif;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-card h4 i {
+            color: var(--accent-color);
+        }
+
+        /* Feature Cards */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .feature-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-soft);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            border-radius: 12px 12px 0 0;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .feature-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .feature-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        /* Example Box */
+        .example-box {
+            background: var(--bg-primary);
+            border-left: 4px solid var(--accent-color);
+            border-radius: 0 8px 8px 0;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .example-box h5 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .example-box h5 i {
+            color: var(--accent-color);
+        }
+
+        /* Research Insight Box */
+        .research-insight {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .research-insight h4 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .research-insight h4 i {
+            color: var(--accent-color);
+        }
+
+        /* Citation Links */
+        .citation-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+            border-bottom: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .citation-link:hover {
+            color: var(--secondary-color);
+            border-bottom-color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        /* App Showcase */
+        .app-showcase {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .app-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-soft);
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .app-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .app-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            margin: 0 auto 1rem;
+        }
+
+        .app-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .app-subtitle {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Navigation Controls */
+        .slide-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 2rem;
+            padding: 1.5rem 0;
+        }
+
+        .slide-nav-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .slide-nav-btn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .slide-nav-btn:disabled {
+            background: var(--text-light);
+            cursor: not-allowed;
+            transform: none;
+            opacity: 0.5;
+        }
+
+        .slide-nav-btn:active {
+            transform: scale(0.95);
+        }
+
+        .slide-indicator {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .indicator-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--border-color);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .indicator-dot.active {
+            background: var(--primary-color);
+            transform: scale(1.3);
+            box-shadow: 0 0 0 3px rgba(26, 54, 93, 0.2);
+        }
+
+        .indicator-dot:hover {
+            background: var(--accent-color);
+            transform: scale(1.1);
+        }
+
+        .slide-counter {
+            color: var(--text-light);
+            font-weight: 600;
+            margin: 0 1rem;
+        }
+
+        /* Key Findings Cards */
+        .findings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .finding-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-soft);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .finding-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            border-radius: 12px 12px 0 0;
+        }
+
+        .finding-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .finding-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .finding-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .finding-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .finding-example {
+            background: var(--bg-primary);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            border-left: 3px solid var(--accent-color);
+        }
+
+        /* Takeaway Section */
+        .takeaway-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .takeaway-card {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .takeaway-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .takeaway-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .takeaway-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .takeaway-text {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* Quiz Styles */
+        .quiz-content-slide {
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 1rem;
+        }
+
+        .quiz-intro-slide {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Custom scrollbar for quiz content */
+        .quiz-content-slide::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .quiz-content-slide::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+            border-radius: 4px;
+        }
+
+        .quiz-content-slide::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        .quiz-content-slide::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary-color);
+        }
+
+        .quiz-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .quiz-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-light);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .start-quiz-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 1rem 2.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-soft);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .start-quiz-btn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .quiz-container {
+            background: var(--bg-primary);
+            border-radius: 16px;
+            padding: 2.5rem;
+            margin-top: 2rem;
+            color: var(--text-dark);
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-color);
+        }
+
+        .question-card {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .question-card:hover {
+            box-shadow: var(--shadow-soft);
+        }
+
+        /* Compact quiz layout */
+        .quiz-content-slide .question-card {
+            margin-bottom: 1rem;
+        }
+
+        .quiz-content-slide .slide-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .quiz-content-slide .quiz-actions {
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .question-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .question-number {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .question-type {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .question-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .options-container {
+            display: grid;
+            gap: 0.8rem;
+        }
+
+        .option {
+            background: var(--bg-primary);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .option:hover {
+            border-color: var(--primary-color);
+            background: var(--bg-secondary);
+        }
+
+        .option.selected {
+            border-color: var(--primary-color);
+            background: var(--bg-secondary);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .option.correct {
+            border-color: #4caf50;
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .option.incorrect {
+            border-color: #f44336;
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .option-letter {
+            width: 30px;
+            height: 30px;
+            background: var(--text-light);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .option.correct .option-letter {
+            background: #4caf50;
+        }
+
+        .option.incorrect .option-letter {
+            background: #f44336;
+        }
+
+        .option.selected .option-letter {
+            background: var(--primary-color);
+        }
+
+        .true-false-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .tf-option {
+            background: var(--bg-primary);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .tf-option:hover {
+            border-color: var(--primary-color);
+            background: var(--bg-secondary);
+        }
+
+        .tf-option.selected {
+            border-color: var(--primary-color);
+            background: var(--bg-secondary);
+            color: var(--primary-color);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .tf-option.correct {
+            border-color: #4caf50;
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .tf-option.incorrect {
+            border-color: #f44336;
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .quiz-actions {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .quiz-button {
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .check-answers-btn {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .check-answers-btn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .reset-btn {
+            background: var(--text-light);
+            color: white;
+        }
+
+        .reset-btn:hover {
+            background: var(--accent-color);
+            transform: translateY(-2px);
+        }
+
+        .quiz-results {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-top: 2rem;
+            text-align: center;
+            display: none;
+        }
+
+        .score-display {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .score-message {
+            font-size: 1.1rem;
+            color: var(--text-dark);
+        }
+
+        /* Navigation Buttons */
+        .page-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 3rem;
+            padding: 1.5rem 0;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .nav-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .nav-button:hover {
+            background: var(--secondary-color);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .content-area {
+                padding: 1rem;
+            }
+            
+            .page-header {
+                padding: 1.5rem;
+            }
+            
+            .page-title {
+                font-size: 2rem;
+            }
+            
+            .page-navigation {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2 class="sidebar-title">Accessible Food Label Reading</h2>
+        </div>
+        <div class="sidebar-nav">
+            <div class="nav-item">
+                <a href="introduction.html" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    Introduction
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="techniques.html" class="nav-link">
+                    <i class="fas fa-cogs"></i>
+                    Techniques
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="interaction.html" class="nav-link active">
+                    <i class="fas fa-hand-pointer"></i>
+                    Interaction
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="datasets.html" class="nav-link">
+                    <i class="fas fa-database"></i>
+                    Datasets
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="challenges.html" class="nav-link">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Challenges
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="conclusion.html" class="nav-link">
+                    <i class="fas fa-flag-checkered"></i>
+                    Conclusion
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="conclusion.html#quiz" class="nav-link">
+                    <i class="fas fa-graduation-cap"></i>
+                    Final Quiz
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="bibliography.html" class="nav-link">
+                    <i class="fas fa-book"></i>
+                    Bibliography
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Audio Player Container -->
+    <div class="audio-player-container" id="audioPlayerContainer">
+        <div class="audio-player-header">
+            <span class="audio-title">Interaction Audio</span>
+            <button class="close-audio-btn" id="closeAudioBtn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="audio-controls-container">
+            <button class="audio-play-pause" id="audioPlayPause">
+                <i class="fas fa-play"></i>
+            </button>
+            <div class="audio-progress-container">
+                <span class="audio-time" id="currentTime">0:00</span>
+                <div class="audio-progress" id="audioProgress">
+                    <div class="audio-progress-bar" id="audioProgressBar"></div>
+                </div>
+                <span class="audio-time" id="totalTime">0:00</span>
+            </div>
+        </div>
+        <audio id="pageAudio" preload="metadata">
+            <source src="audio/Interaction.m4a" type="audio/mp4">
+            <source src="audio/Interaction.mp3" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <!-- Top Navigation Bar -->
+        <nav class="top-navbar">
+            <div class="d-flex justify-content-between align-items-center">
+                <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar navigation">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="audio-controls">
+                    <div class="reading-time">
+                        <i class="fas fa-clock"></i>
+                        <span>6 min read</span>
+                    </div>
+                    <button class="audio-player-btn" id="audioPlayerBtn" aria-label="Play page audio">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Content Area -->
+        <div class="content-area">
+            <div class="page-header">
+                <h1 class="page-title">Voice Interaction & Evaluation</h1>
+                <p style="text-align: center; color: var(--text-light); margin-top: 1rem; font-size: 1.1rem;">
+                    Designing accessible voice interfaces and evaluating assistive technologies
+                </p>
+            </div>
+
+            <!-- Interactive Presentation -->
+            <div class="interaction-presentation">
+                <div class="presentation-header">
+                    <h2 class="presentation-title">Voice Interface Design & Evaluation</h2>
+                </div>
+
+                <div class="presentation-container">
+                    <!-- Slide 1: Why Voice Matters -->
+                    <div class="content-slide active" id="slide1">
+                        <div class="slide-header">
+                            <div class="slide-number">1</div>
+                            <h2 class="slide-title">Why Voice Matters</h2>
+                        </div>
+
+                        <div class="slide-goal">
+                            <strong>Goal:</strong> Understand why voice interfaces are critical for accessible food label reading.
+                        </div>
+
+                        <p>For blind and visually impaired users, voice is the fastest and most natural way to receive information from a system. Screen readers already dominate accessibility tools, but when it comes to food labels, there are special challenges:</p>
+
+                        <div class="info-grid">
+                            <div class="info-card">
+                                <h4><i class="fas fa-volume-up"></i> Overwhelming Information</h4>
+                                <p>Reading an entire nutrition label word-for-word is overwhelming and time-consuming.</p>
+                            </div>
+
+                            <div class="info-card">
+                                <h4><i class="fas fa-bullseye"></i> Focused Answers</h4>
+                                <p>Users need focused answers, not paragraphs of text.</p>
+                            </div>
+
+                            <div class="info-card">
+                                <h4><i class="fas fa-user-check"></i> Independence</h4>
+                                <p>Independence depends on being able to ask specific questions and receive direct, spoken responses.</p>
+                            </div>
+                        </div>
+
+                        <div class="example-box">
+                            <h5><i class="fas fa-lightbulb"></i> Example</h5>
+                            <p><strong>Instead of:</strong></p>
+                            <p style="color: var(--text-light); font-style: italic;">"Calories 120, Fat 2g, Sodium 210mg, Carbohydrates 23g, Sugars 12g, Protein 3g…"</p>
+                            <p><strong>A blind user may simply want to ask:</strong></p>
+                            <p style="color: var(--primary-color); font-weight: 600;">"How many calories?"</p>
+                            <p><strong>…and the system should respond clearly:</strong></p>
+                            <p style="color: var(--secondary-color); font-weight: 600;">"120 calories per serving."</p>
+                        </div>
+                    </div>
+
+                    <!-- Slide 2: Design Principles -->
+                    <div class="content-slide" id="slide2">
+                        <div class="slide-header">
+                            <div class="slide-number">2</div>
+                            <h2 class="slide-title">Design Principles for Accessible Voice</h2>
+                        </div>
+
+                        <div class="slide-goal">
+                            <strong>Goal:</strong> Learn the three core principles for effective voice interaction design.
+                        </div>
+
+                        <p>To design effective voice interaction, systems should follow three principles:</p>
+
+                        <div class="feature-grid">
+                            <div class="feature-card">
+                                <div class="feature-header">
+                                    <div class="feature-icon">
+                                        <i class="fas fa-microphone"></i>
+                                    </div>
+                                    <h3 class="feature-title">Voice Queries</h3>
+                                </div>
+                                <p>Natural language commands should be supported.</p>
+                                <h5 style="color: var(--primary-color); margin-top: 1rem;">Example queries:</h5>
+                                <ul style="list-style: none; padding-left: 0;">
+                                    <li><i class="fas fa-quote-left" style="color: var(--text-light);"></i> "What are the allergens?"</li>
+                                    <li><i class="fas fa-quote-left" style="color: var(--text-light);"></i> "When does this expire?"</li>
+                                    <li><i class="fas fa-quote-left" style="color: var(--text-light);"></i> "Read the nutrition facts."</li>
+                                </ul>
+                            </div>
+
+                            <div class="feature-card">
+                                <div class="feature-header">
+                                    <div class="feature-icon">
+                                        <i class="fas fa-compress-alt"></i>
+                                    </div>
+                                    <h3 class="feature-title">Clear and Concise Responses</h3>
+                                </div>
+                                <p>Long outputs are confusing.</p>
+                                <h5 style="color: var(--primary-color); margin-top: 1rem;">Example responses:</h5>
+                                <ul style="list-style: none; padding-left: 0;">
+                                    <li><i class="fas fa-check" style="color: var(--secondary-color);"></i> "Contains milk and soy."</li>
+                                    <li><i class="fas fa-check" style="color: var(--secondary-color);"></i> "Best before June 25, 2025."</li>
+                                </ul>
+                            </div>
+
+                            <div class="feature-card">
+                                <div class="feature-header">
+                                    <div class="feature-icon">
+                                        <i class="fas fa-redo-alt"></i>
+                                    </div>
+                                    <h3 class="feature-title">Follow-Up Support</h3>
+                                </div>
+                                <p>Users should not restart every time.</p>
+                                <p>After "Read nutrition facts," a user could follow with:</p>
+                                <ul style="list-style: none; padding-left: 0;">
+                                    <li><i class="fas fa-arrow-right" style="color: var(--primary-color);"></i> "What about sugar?"</li>
+                                    <li><i class="fas fa-arrow-right" style="color: var(--primary-color);"></i> "How much protein?"</li>
+                                </ul>
+                                <p style="color: var(--text-light); font-size: 0.9rem; margin-top: 1rem;">This conversational flow reduces cognitive load and makes the interaction feel natural.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slide 3: Research Insight -->
+                    <div class="content-slide" id="slide3">
+                        <div class="slide-header">
+                            <div class="slide-number">3</div>
+                            <h2 class="slide-title">Research Insight: OCR + LLM Integration</h2>
+                        </div>
+
+                        <div class="slide-goal">
+                            <strong>Goal:</strong> Understand how combining OCR with AI improves date interpretation.
+                        </div>
+
+                        <div class="research-insight">
+                            <h4><i class="fas fa-flask"></i> Research Finding</h4>
+                            <div style="text-align: center; margin: 1rem 0; position: relative; display: inline-block;">
+                                <img src="images/MODERN_OCR.png" alt="Modern OCR + LLM Integration Process"
+                                     style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: var(--shadow-medium);" />
+                                <div style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); color: white; padding: 6px 12px; border-radius: 15px; font-size: 0.7rem; font-weight: 500; z-index: 10; white-space: nowrap;">Credits: Gemini 2.5 Flash</div>
+                            </div>
+                            <p style="text-align: center; color: var(--text-light); font-size: 0.9rem; margin-top: 1rem;">
+                                <a href="bibliography.html#ref2" class="citation-link">Grumeza et al. (2024)</a> demonstrated that combining OCR with Large Language Models (LLMs) significantly improves how expiry dates are understood <a href="bibliography.html#ref2" class="citation-link">[2]</a>.
+                            </p>
+                        </div>
+
+                        <div class="info-grid">
+                            <div class="info-card" style="border-left: 4px solid var(--accent-color);">
+                                <h4><i class="fas fa-exclamation-triangle" style="color: var(--accent-color);"></i> Problem</h4>
+                                <p>Expiry dates often appear in inconsistent formats:</p>
+                                <ul style="font-family: 'Courier New', monospace; background: var(--bg-primary); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                                    <li>"06/25"</li>
+                                    <li>"Best by 25/06/2025"</li>
+                                    <li>"Use before June 2025"</li>
+                                </ul>
+                            </div>
+
+                            <div class="info-card" style="border-left: 4px solid var(--primary-color);">
+                                <h4><i class="fas fa-cogs" style="color: var(--primary-color);"></i> Solution</h4>
+                                <p>OCR extracts the raw text, while an LLM interprets the context.</p>
+                                <div style="text-align: center; margin: 1.5rem 0; font-size: 1.5rem;">
+                                    <i class="fas fa-eye" style="color: var(--primary-color);"></i>
+                                    <span style="margin: 0 1rem; color: var(--text-light);">+</span>
+                                    <i class="fas fa-brain" style="color: var(--secondary-color);"></i>
+                                </div>
+                                <p style="text-align: center; color: var(--text-light); font-size: 0.9rem;">OCR + LLM</p>
+                            </div>
+
+                            <div class="info-card" style="border-left: 4px solid var(--secondary-color);">
+                                <h4><i class="fas fa-check-circle" style="color: var(--secondary-color);"></i> Result</h4>
+                                <p>The system can correctly explain <code style="background: var(--bg-primary); padding: 0.2rem 0.5rem; border-radius: 4px;">"06/25"</code> as <strong>June 2025</strong> instead of the 25th of June.</p>
+                                <div style="text-align: center; margin-top: 1rem;">
+                                    <i class="fas fa-calendar-check" style="font-size: 2rem; color: var(--secondary-color);"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="example-box" style="background: var(--bg-secondary); border-left-color: var(--secondary-color);">
+                            <h5><i class="fas fa-key"></i> Key Takeaway</h5>
+                            <p>This is a major advancement because it shows that voice access must go beyond text-to-speech. It requires <strong>intelligent interpretation</strong> so users get the correct meaning, not just a literal reading.</p>
+                        </div>
+                    </div>
+
+                    <!-- Slide 4: Evaluation of Assistive Tools -->
+                    <div class="content-slide" id="slide4">
+                        <div class="slide-header">
+                            <div class="slide-number">4</div>
+                            <h2 class="slide-title">Evaluation of Assistive Tools</h2>
+                        </div>
+
+                        <div class="slide-goal">
+                            <strong>Goal:</strong> Learn why usability evaluation matters beyond technical accuracy.
+                        </div>
+
+                        <div class="example-box" style="background: var(--bg-secondary); border-left-color: var(--primary-color);">
+                            <h5><i class="fas fa-exclamation-circle"></i> Why Evaluation Matters</h5>
+                            <p>Building a strong OCR pipeline is only half the story. If the user interface is confusing or the system is too slow, blind and visually impaired users cannot rely on it in daily life. This is why evaluation through usability studies is critical: it reveals what actually helps users, beyond raw accuracy numbers.</p>
+                        </div>
+
+                        <div class="info-grid">
+                            <div class="info-card">
+                                <h4><i class="fas fa-not-equal"></i> Algorithms ≠ Usability</h4>
+                                <p>A perfect OCR model is useless if it overwhelms users with long text.</p>
+                            </div>
+
+                            <div class="info-card">
+                                <h4><i class="fas fa-shopping-cart"></i> Real-world Testing</h4>
+                                <p>Supermarkets are noisy, labels vary, and users need results instantly.</p>
+                            </div>
+
+                            <div class="info-card">
+                                <h4><i class="fas fa-universal-access"></i> Accessibility-first Design</h4>
+                                <p>Simplicity often wins over complexity.</p>
+                            </div>
+                        </div>
+
+                        <div class="research-insight">
+                            <h4><i class="fas fa-mobile-alt"></i> Research: Evaluating Current Apps</h4>
+                            <p><a href="bibliography.html#ref4" class="citation-link">Bhagat et al. (2023)</a> conducted an accessibility evaluation of widely used mobile tools <a href="bibliography.html#ref4" class="citation-link">[4]</a>:</p>
+                        </div>
+
+                        <div class="app-showcase">
+                            <div class="app-card">
+                                <div class="app-icon">
+                                    <i class="fab fa-microsoft"></i>
+                                </div>
+                                <h4 class="app-title">Seeing AI</h4>
+                                <p class="app-subtitle">(Microsoft)</p>
+                            </div>
+
+                            <div class="app-card">
+                                <div class="app-icon">
+                                    <i class="fab fa-google"></i>
+                                </div>
+                                <h4 class="app-title">Lookout</h4>
+                                <p class="app-subtitle">(Google)</p>
+                            </div>
+
+                            <div class="app-card">
+                                <div class="app-icon">
+                                    <i class="fas fa-eye"></i>
+                                </div>
+                                <h4 class="app-title">Envision AI</h4>
+                                <p class="app-subtitle">(Independent app)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slide 5: Key Findings -->
+                    <div class="content-slide" id="slide5">
+                        <div class="slide-header">
+                            <div class="slide-number">5</div>
+                            <h2 class="slide-title">Key Findings from App Evaluation</h2>
+                        </div>
+
+                        <div class="slide-goal">
+                            <strong>Goal:</strong> Understand what users actually prefer in assistive applications.
+                        </div>
+
+                        <div class="findings-grid">
+                            <div class="finding-card">
+                                <div class="finding-header">
+                                    <div class="finding-icon">
+                                        <i class="fas fa-compress-arrows-alt"></i>
+                                    </div>
+                                    <h3 class="finding-title">Preference for Summaries</h3>
+                                </div>
+                                <p>Users preferred fast, reliable summaries instead of having every word read aloud.</p>
+                                <div class="finding-example">
+                                    <strong>Example:</strong> "Expires June 25, 2025" was more useful than a paragraph of raw text.
+                                </div>
+                            </div>
+
+                            <div class="finding-card">
+                                <div class="finding-header">
+                                    <div class="finding-icon">
+                                        <i class="fas fa-tachometer-alt"></i>
+                                    </div>
+                                    <h3 class="finding-title">Speed Over Accuracy</h3>
+                                </div>
+                                <p>Response speed mattered more than recognition accuracy.</p>
+                                <div class="finding-example">
+                                    <strong>Finding:</strong> A 95% accurate app that took 10 seconds was rated worse than a 90% accurate app that gave results instantly.
+                                </div>
+                            </div>
+
+                            <div class="finding-card">
+                                <div class="finding-header">
+                                    <div class="finding-icon">
+                                        <i class="fas fa-mouse-pointer"></i>
+                                    </div>
+                                    <h3 class="finding-title">Navigation Simplicity</h3>
+                                </div>
+                                <p>Navigation simplicity improved accessibility.</p>
+                                <div class="finding-example">
+                                    <strong>Result:</strong> One-tap scanning worked better than multi-step menus.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slide 6: Key Takeaway -->
+                    <div class="content-slide" id="slide6">
+                        <div class="slide-header">
+                            <div class="slide-number">6</div>
+                            <h2 class="slide-title">Key Takeaway</h2>
+                        </div>
+
+                        <div class="slide-goal">
+                            <strong>Goal:</strong> Understand the three pillars of accessibility success.
+                        </div>
+
+                        <p style="font-size: 1.1rem; margin-bottom: 2rem;">Evaluating assistive apps shows that accessibility success is not defined by OCR accuracy alone. It depends on:</p>
+
+                        <div class="takeaway-grid">
+                            <div class="takeaway-card">
+                                <i class="fas fa-bolt takeaway-icon"></i>
+                                <h4 class="takeaway-title">Speed</h4>
+                                <p class="takeaway-text">Users need instant results.</p>
+                            </div>
+
+                            <div class="takeaway-card">
+                                <i class="fas fa-eye takeaway-icon"></i>
+                                <h4 class="takeaway-title">Clarity</h4>
+                                <p class="takeaway-text">Short, meaningful summaries are preferred.</p>
+                            </div>
+
+                            <div class="takeaway-card">
+                                <i class="fas fa-hand-paper takeaway-icon"></i>
+                                <h4 class="takeaway-title">Simplicity</h4>
+                                <p class="takeaway-text">Easy navigation builds independence.</p>
+                            </div>
+                        </div>
+
+                        <div class="example-box" style="background: var(--bg-primary); border-left-color: var(--primary-color); margin-top: 2rem;">
+                            <h5><i class="fas fa-lightbulb"></i> Final Insight</h5>
+                            <p style="font-size: 1.1rem;"><strong>In short,</strong> designing for accessibility means optimizing the entire user experience, not just the underlying recognition engine.</p>
+                        </div>
+
+                        <div style="text-align: center; margin-top: 2rem;">
+                            <p style="color: var(--text-light); font-style: italic;">Voice access in accessible food label reading is about providing dialogue, not monologue.</p>
+                        </div>
+                    </div>
+
+                    <!-- Slide 7: Quiz -->
+                    <div class="content-slide" id="slide7">
+                        <!-- Quiz Introduction (shown by default) -->
+                        <div class="quiz-intro-slide" id="quizIntroSlide">
+                            <div class="slide-header">
+                                <div class="slide-number">🧠</div>
+                                <h2 class="slide-title">Test Your Knowledge</h2>
+                            </div>
+
+                            <div class="slide-goal">
+                                <strong>Goal:</strong> Reinforce your understanding of voice interaction design principles.
+                            </div>
+
+                            <div style="text-align: center; padding: 2rem;">
+                                <p style="font-size: 1.1rem; color: var(--text-light); margin-bottom: 2rem;">
+                                    Ready to test your understanding of voice interaction design and evaluation?<br>
+                                    Take this quick 2-question quiz to reinforce what you've learned.
+                                </p>
+                                <button class="start-quiz-btn" onclick="startQuizInSlide()">
+                                    <i class="fas fa-play"></i>
+                                    Start Quiz
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Quiz Content (hidden by default) -->
+                        <div class="quiz-content-slide" id="quizContentSlide" style="display: none; position: relative;">
+                            <div class="slide-header">
+                                <div class="slide-number">🧠</div>
+                                <h2 class="slide-title">Quiz: Voice Interaction Design</h2>
+                            </div>
+
+                            <!-- Question 1 -->
+                            <div class="question-card">
+                                <div class="question-header">
+                                    <div class="question-number">1</div>
+                                    <span class="question-type">MCQ</span>
+                                </div>
+                                <div class="question-text">
+                                    You are designing a food label reader for blind users. Two prototypes exist:<br><br>
+                                    <strong>Prototype A:</strong> 95% accurate but takes 12 seconds to respond.<br>
+                                    <strong>Prototype B:</strong> 90% accurate but responds instantly.<br><br>
+                                    Based on Bhagat et al. (2023), which would likely be rated higher by users?
+                                </div>
+                                <div class="options-container">
+                                    <div class="option" data-question="1" data-option="A">
+                                        <div class="option-letter">A</div>
+                                        <span>Prototype A (higher accuracy)</span>
+                                    </div>
+                                    <div class="option" data-question="1" data-option="B" data-correct="true">
+                                        <div class="option-letter">B</div>
+                                        <span>Prototype B (faster response)</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Question 2 -->
+                            <div class="question-card">
+                                <div class="question-header">
+                                    <div class="question-number">2</div>
+                                    <span class="question-type">True/False</span>
+                                </div>
+                                <div class="question-text">
+                                    An app that gives short, clear summaries is often more useful to blind users than one that reads an entire label word-for-word.
+                                </div>
+                                <div class="true-false-container">
+                                    <div class="tf-option" data-question="2" data-option="true" data-correct="true">
+                                        <i class="fas fa-check" style="color: #4caf50; margin-right: 0.5rem;"></i>
+                                        True
+                                    </div>
+                                    <div class="tf-option" data-question="2" data-option="false">
+                                        <i class="fas fa-times" style="color: #f44336; margin-right: 0.5rem;"></i>
+                                        False
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="quiz-actions">
+                                <button class="quiz-button check-answers-btn" onclick="checkAnswersInSlide()">
+                                    <i class="fas fa-check-circle" style="margin-right: 0.5rem;"></i>
+                                    Check Answers
+                                </button>
+                                <button class="quiz-button reset-btn" onclick="resetQuizInSlide()">
+                                    <i class="fas fa-redo" style="margin-right: 0.5rem;"></i>
+                                    Reset Quiz
+                                </button>
+                            </div>
+
+                            <div class="quiz-results" id="quizResultsSlide" style="display: none;">
+                                <div class="score-display" id="scoreDisplaySlide"></div>
+                                <div class="score-message" id="scoreMessageSlide"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide Navigation Controls -->
+                <div class="slide-controls">
+                    <button class="slide-nav-btn" id="prevBtn" onclick="changeSlide(-1)">
+                        <i class="fas fa-chevron-left"></i>
+                        Previous
+                    </button>
+
+                    <div class="slide-indicator">
+                        <div class="indicator-dot active" onclick="goToSlide(1)"></div>
+                        <div class="indicator-dot" onclick="goToSlide(2)"></div>
+                        <div class="indicator-dot" onclick="goToSlide(3)"></div>
+                        <div class="indicator-dot" onclick="goToSlide(4)"></div>
+                        <div class="indicator-dot" onclick="goToSlide(5)"></div>
+                        <div class="indicator-dot" onclick="goToSlide(6)"></div>
+                        <div class="indicator-dot" onclick="goToSlide(7)"></div>
+                        <span class="slide-counter">1 / 7</span>
+                    </div>
+
+                    <button class="slide-nav-btn" id="nextBtn" onclick="changeSlide(1)">
+                        Next
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+
+
+            <!-- Page Navigation -->
+            <div class="page-navigation">
+                <a href="techniques.html" class="nav-button">
+                    <i class="fas fa-arrow-left"></i>
+                    Previous: Techniques
+                </a>
+                <a href="datasets.html" class="nav-button">
+                    Next: Datasets
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        // Sidebar functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+            function toggleSidebar() {
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.toggle('show');
+                    sidebarOverlay.classList.toggle('show');
+                } else {
+                    sidebar.classList.toggle('collapsed');
+                    mainContent.classList.toggle('expanded');
+                }
+            }
+
+            function closeSidebar() {
+                sidebar.classList.remove('show');
+                sidebarOverlay.classList.remove('show');
+            }
+
+            sidebarToggle.addEventListener('click', toggleSidebar);
+            sidebarOverlay.addEventListener('click', closeSidebar);
+
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768) {
+                    sidebar.classList.remove('show');
+                    sidebarOverlay.classList.remove('show');
+                }
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeSidebar();
+                }
+            });
+        });
+
+        // Slide presentation functionality
+        let currentSlide = 1;
+        const totalSlides = 7;
+
+        function updateSlideDisplay() {
+            // Hide all slides
+            for (let i = 1; i <= totalSlides; i++) {
+                const slide = document.getElementById(`slide${i}`);
+                if (slide) {
+                    slide.classList.remove('active', 'prev');
+                    if (i < currentSlide) {
+                        slide.classList.add('prev');
+                    }
+                }
+            }
+
+            // Show current slide
+            const activeSlide = document.getElementById(`slide${currentSlide}`);
+            if (activeSlide) {
+                activeSlide.classList.add('active');
+            }
+
+            // Update indicators
+            const indicators = document.querySelectorAll('.indicator-dot');
+            indicators.forEach((dot, index) => {
+                dot.classList.toggle('active', index + 1 === currentSlide);
+            });
+
+            // Update counter
+            const counter = document.querySelector('.slide-counter');
+            if (counter) {
+                counter.textContent = `${currentSlide} / ${totalSlides}`;
+            }
+
+            // Update navigation buttons
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+
+            if (prevBtn) {
+                prevBtn.disabled = currentSlide === 1;
+            }
+            if (nextBtn) {
+                nextBtn.disabled = currentSlide === totalSlides;
+            }
+        }
+
+        function changeSlide(direction) {
+            const newSlide = currentSlide + direction;
+            if (newSlide >= 1 && newSlide <= totalSlides) {
+                currentSlide = newSlide;
+                updateSlideDisplay();
+            }
+        }
+
+        function goToSlide(slideNumber) {
+            if (slideNumber >= 1 && slideNumber <= totalSlides) {
+                currentSlide = slideNumber;
+                updateSlideDisplay();
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowLeft') {
+                changeSlide(-1);
+            } else if (e.key === 'ArrowRight') {
+                changeSlide(1);
+            }
+        });
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateSlideDisplay();
+        });
+
+        // Quiz functionality
+        function startQuizInSlide() {
+            document.getElementById('quizIntroSlide').style.display = 'none';
+            document.getElementById('quizContentSlide').style.display = 'block';
+        }
+
+        function checkAnswersInSlide() {
+            const questions = document.querySelectorAll('#quizContentSlide .question-card');
+            let correctAnswers = 0;
+            let totalQuestions = questions.length;
+
+            questions.forEach((question, index) => {
+                const questionNum = index + 1;
+                const selectedOption = question.querySelector('.option.selected, .tf-option.selected');
+                const correctOption = question.querySelector('[data-correct="true"]');
+
+                if (selectedOption && selectedOption.hasAttribute('data-correct')) {
+                    correctAnswers++;
+                    selectedOption.classList.add('correct');
+                } else {
+                    if (selectedOption) {
+                        selectedOption.classList.add('incorrect');
+                    }
+                    if (correctOption) {
+                        correctOption.classList.add('correct');
+                    }
+                }
+            });
+
+            // Show results
+            const resultsDiv = document.getElementById('quizResultsSlide');
+            const scoreDisplay = document.getElementById('scoreDisplaySlide');
+            const scoreMessage = document.getElementById('scoreMessageSlide');
+
+            const percentage = Math.round((correctAnswers / totalQuestions) * 100);
+
+            scoreDisplay.textContent = `${correctAnswers}/${totalQuestions} (${percentage}%)`;
+
+            if (percentage >= 80) {
+                scoreMessage.textContent = "Excellent! You have a strong understanding of voice interaction design principles.";
+                scoreDisplay.style.color = '#4caf50';
+            } else if (percentage >= 60) {
+                scoreMessage.textContent = "Good work! Review the content to strengthen your understanding.";
+                scoreDisplay.style.color = '#ff9800';
+            } else {
+                scoreMessage.textContent = "Keep learning! Review the slides to improve your understanding.";
+                scoreDisplay.style.color = '#f44336';
+            }
+
+            resultsDiv.style.display = 'block';
+        }
+
+        function resetQuizInSlide() {
+            // Reset all selections and styles
+            const options = document.querySelectorAll('#quizContentSlide .option, #quizContentSlide .tf-option');
+            options.forEach(option => {
+                option.classList.remove('selected', 'correct', 'incorrect');
+            });
+
+            // Hide results
+            document.getElementById('quizResultsSlide').style.display = 'none';
+        }
+
+        // Add click handlers for quiz options
+        document.addEventListener('DOMContentLoaded', function() {
+            // MCQ options
+            document.querySelectorAll('#quizContentSlide .option').forEach(option => {
+                option.addEventListener('click', function() {
+                    const questionCard = this.closest('.question-card');
+                    const allOptions = questionCard.querySelectorAll('.option');
+
+                    allOptions.forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                });
+            });
+
+            // True/False options
+            document.querySelectorAll('#quizContentSlide .tf-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    const questionCard = this.closest('.question-card');
+                    const allOptions = questionCard.querySelectorAll('.tf-option');
+
+                    allOptions.forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                });
+            });
+
+            // Audio Player Functionality
+            const audioPlayerBtn = document.getElementById('audioPlayerBtn');
+            const audioPlayerContainer = document.getElementById('audioPlayerContainer');
+            const closeAudioBtn = document.getElementById('closeAudioBtn');
+            const pageAudio = document.getElementById('pageAudio');
+            const audioPlayPause = document.getElementById('audioPlayPause');
+            const audioProgress = document.getElementById('audioProgress');
+            const audioProgressBar = document.getElementById('audioProgressBar');
+            const currentTime = document.getElementById('currentTime');
+            const totalTime = document.getElementById('totalTime');
+
+
+            // Open audio player and start playing
+            audioPlayerBtn.addEventListener('click', function() {
+                audioPlayerContainer.classList.add('active');
+                pageAudio.play();
+                updatePlayPauseIcon();
+            });
+
+            // Close audio player
+            closeAudioBtn.addEventListener('click', function() {
+                audioPlayerContainer.classList.remove('active');
+                pageAudio.pause();
+                updatePlayPauseIcon();
+            });
+
+            // Play/Pause functionality
+            audioPlayPause.addEventListener('click', function() {
+                if (pageAudio.paused) {
+                    pageAudio.play();
+                } else {
+                    pageAudio.pause();
+                }
+                updatePlayPauseIcon();
+            });
+
+            // Update play/pause icon
+            function updatePlayPauseIcon() {
+                const icon = audioPlayPause.querySelector('i');
+                if (pageAudio.paused) {
+                    icon.className = 'fas fa-play';
+                } else {
+                    icon.className = 'fas fa-pause';
+                }
+            }
+
+            // Format time
+            function formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+
+            // Update progress bar
+            pageAudio.addEventListener('timeupdate', function() {
+                const progress = (pageAudio.currentTime / pageAudio.duration) * 100;
+                audioProgressBar.style.width = progress + '%';
+                currentTime.textContent = formatTime(pageAudio.currentTime);
+            });
+
+            // Set total time when metadata loads
+            pageAudio.addEventListener('loadedmetadata', function() {
+                totalTime.textContent = formatTime(pageAudio.duration);
+            });
+
+            // Click on progress bar to seek
+            audioProgress.addEventListener('click', function(e) {
+                const rect = audioProgress.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const width = rect.width;
+                const clickTime = (clickX / width) * pageAudio.duration;
+                pageAudio.currentTime = clickTime;
+            });
+
+            // Auto-update play/pause icon when audio ends
+            pageAudio.addEventListener('ended', function() {
+                updatePlayPauseIcon();
+            });
+        });
+    </script>
+</body>
+</html>

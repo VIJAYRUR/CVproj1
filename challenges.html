@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Challenges - Accessible Food Label Reading with Computer Vision</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #1a365d;
+            --secondary-color: #2d3748;
+            --accent-color: #4a5568;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --bg-primary: #f7fafc;
+            --bg-secondary: #ffffff;
+            --border-color: #e2e8f0;
+            --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --shadow-medium: 0 8px 25px rgba(0, 0, 0, 0.12);
+            --sidebar-width: 280px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background-color: var(--bg-primary);
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: var(--sidebar-width);
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            box-shadow: var(--shadow-soft);
+            transform: translateX(0);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .sidebar-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .sidebar-nav {
+            padding: 1rem 0;
+        }
+
+        .nav-item {
+            margin: 0.25rem 0;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            color: var(--text-dark);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background-color: var(--bg-primary);
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+        }
+
+        .nav-link.active {
+            background-color: var(--bg-primary);
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .nav-link i {
+            margin-right: 0.75rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            transition: margin-left 0.3s ease;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        .top-navbar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 1.5rem;
+            box-shadow: var(--shadow-soft);
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+
+        .sidebar-toggle {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+
+        .sidebar-toggle:hover {
+            background-color: var(--bg-primary);
+        }
+
+        .content-area {
+            padding: 2rem;
+        }
+
+        .page-header {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .page-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .content-section {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-color);
+        }
+
+        /* Interactive Presentation Styles */
+        .challenges-presentation {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: var(--shadow-medium);
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .presentation-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .presentation-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .presentation-container {
+            position: relative;
+            min-height: 700px;
+            max-height: 80vh;
+            overflow: hidden;
+        }
+
+        .content-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: var(--shadow-medium);
+            border: 1px solid var(--border-color);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(50px);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 1;
+        }
+
+        .content-slide.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(0);
+            z-index: 2;
+        }
+
+        .content-slide.prev {
+            transform: translateX(-50px);
+            opacity: 0;
+            visibility: hidden;
+            z-index: 0;
+        }
+
+        .content-slide::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+        }
+
+        .slide-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .slide-number {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .slide-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .slide-goal {
+            background: var(--bg-primary);
+            border-left: 4px solid var(--primary-color);
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .slide-goal strong {
+            color: var(--primary-color);
+        }
+
+        /* Reading Time */
+        .reading-time {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-light);
+            font-size: 0.9rem;
+            background: var(--bg-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .reading-time i {
+            color: var(--primary-color);
+        }
+
+        /* Audio Player */
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .audio-player-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .audio-player-btn:hover {
+            background: var(--secondary-color);
+            transform: scale(1.05);
+        }
+
+        .audio-player-container {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 25px;
+            padding: 1rem 1.5rem;
+            box-shadow: var(--shadow-medium);
+            z-index: 1000;
+            min-width: 300px;
+        }
+
+        .audio-player-container.active {
+            display: block;
+        }
+
+        .audio-player-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .audio-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .close-audio-btn {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-audio-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .audio-controls-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .audio-play-pause {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .audio-play-pause:hover {
+            background: var(--secondary-color);
+        }
+
+        .audio-progress-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .audio-time {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            min-width: 35px;
+        }
+
+        .audio-progress {
+            flex: 1;
+            height: 4px;
+            background: var(--border-color);
+            border-radius: 2px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .audio-progress-bar {
+            height: 100%;
+            background: var(--primary-color);
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+
+        /* Challenge Cards */
+        .challenge-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .challenge-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-soft);
+            position: relative;
+            height: 280px;
+            perspective: 1000px;
+        }
+
+        .challenge-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.8s;
+            transform-style: preserve-3d;
+        }
+
+        .challenge-card:hover .challenge-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .challenge-card-front, .challenge-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .challenge-card-front {
+            background: var(--bg-secondary);
+        }
+
+        .challenge-card-back {
+            background: var(--bg-primary);
+            transform: rotateY(180deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .challenge-card-front::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            border-radius: 12px 12px 0 0;
+        }
+
+        .challenge-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .image-credits-challenge {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            z-index: 10;
+            white-space: nowrap;
+        }
+
+        .hover-hint-challenge {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .challenge-card:hover .hover-hint-challenge {
+            opacity: 0;
+        }
+
+        .challenge-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .challenge-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .challenge-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .problem-box {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .problem-box strong {
+            color: var(--primary-color);
+        }
+
+        .issues-list {
+            background: var(--bg-primary);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .issues-list h5 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .issues-list h5 i {
+            color: var(--accent-color);
+        }
+
+        .issues-list ul {
+            margin: 0;
+            padding-left: 1.5rem;
+        }
+
+        .issues-list li {
+            margin-bottom: 0.5rem;
+            color: var(--text-dark);
+        }
+
+        /* Research Insight Box */
+        .research-insight {
+            background: linear-gradient(135deg, #e8f5e8, #f0f8ff);
+            border-left: 4px solid var(--accent-color);
+            border-radius: 0 8px 8px 0;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .research-insight h5 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .research-insight h5 i {
+            color: var(--accent-color);
+        }
+
+        .research-insight a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .research-insight a:hover {
+            text-decoration: underline;
+        }
+
+        /* Example Box */
+        .example-box {
+            background: var(--bg-primary);
+            border-left: 4px solid var(--accent-color);
+            border-radius: 0 8px 8px 0;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .example-box h5 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .example-box h5 i {
+            color: var(--accent-color);
+        }
+
+        .example-item {
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            padding: 0.8rem;
+            margin: 0.5rem 0;
+            border-left: 3px solid var(--text-light);
+        }
+
+        /* Findings Cards */
+        .findings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .finding-card {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .finding-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .finding-card h5 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .finding-card h5 i {
+            color: var(--accent-color);
+        }
+
+        /* Navigation Controls */
+        .slide-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 2rem;
+            padding: 1.5rem 0;
+        }
+
+        .slide-nav-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .slide-nav-btn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .slide-nav-btn:disabled {
+            background: var(--text-light);
+            cursor: not-allowed;
+            transform: none;
+            opacity: 0.5;
+        }
+
+        .slide-nav-btn:active {
+            transform: scale(0.95);
+        }
+
+        .slide-indicator {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .indicator-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--border-color);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .indicator-dot.active {
+            background: var(--primary-color);
+            transform: scale(1.3);
+            box-shadow: 0 0 0 3px rgba(26, 54, 93, 0.2);
+        }
+
+        .indicator-dot:hover {
+            background: var(--accent-color);
+            transform: scale(1.1);
+        }
+
+        .slide-counter {
+            color: var(--text-light);
+            font-weight: 600;
+            margin: 0 1rem;
+        }
+
+        /* Navigation Buttons */
+        .page-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 3rem;
+            padding: 1.5rem 0;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .nav-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .nav-button:hover {
+            background: var(--secondary-color);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .content-area {
+                padding: 1rem;
+            }
+            
+            .page-header {
+                padding: 1.5rem;
+            }
+            
+            .page-title {
+                font-size: 2rem;
+            }
+            
+            .page-navigation {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2 class="sidebar-title">Accessible Food Label Reading</h2>
+        </div>
+        <div class="sidebar-nav">
+            <div class="nav-item">
+                <a href="introduction.html" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    Introduction
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="techniques.html" class="nav-link">
+                    <i class="fas fa-cogs"></i>
+                    Techniques
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="interaction.html" class="nav-link">
+                    <i class="fas fa-hand-pointer"></i>
+                    Interaction
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="datasets.html" class="nav-link">
+                    <i class="fas fa-database"></i>
+                    Datasets
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="challenges.html" class="nav-link active">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Challenges
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="conclusion.html" class="nav-link">
+                    <i class="fas fa-flag-checkered"></i>
+                    Conclusion
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="conclusion.html#quiz" class="nav-link">
+                    <i class="fas fa-graduation-cap"></i>
+                    Final Quiz
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="bibliography.html" class="nav-link">
+                    <i class="fas fa-book"></i>
+                    Bibliography
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Audio Player Container -->
+    <div class="audio-player-container" id="audioPlayerContainer">
+        <div class="audio-player-header">
+            <span class="audio-title">Challenges Audio</span>
+            <button class="close-audio-btn" id="closeAudioBtn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="audio-controls-container">
+            <button class="audio-play-pause" id="audioPlayPause">
+                <i class="fas fa-play"></i>
+            </button>
+            <div class="audio-progress-container">
+                <span class="audio-time" id="currentTime">0:00</span>
+                <div class="audio-progress" id="audioProgress">
+                    <div class="audio-progress-bar" id="audioProgressBar"></div>
+                </div>
+                <span class="audio-time" id="totalTime">0:00</span>
+            </div>
+        </div>
+        <audio id="pageAudio" preload="metadata">
+            <source src="audio/Challenges.m4a" type="audio/mp4">
+            <source src="audio/Challenges.mp3" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <!-- Top Navigation Bar -->
+        <nav class="top-navbar">
+            <div class="d-flex justify-content-between align-items-center">
+                <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar navigation">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="audio-controls">
+                    <div class="reading-time">
+                        <i class="fas fa-clock"></i>
+                        <span>4 min read</span>
+                    </div>
+                    <button class="audio-player-btn" id="audioPlayerBtn" aria-label="Play page audio">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Content Area -->
+        <div class="content-area">
+            <div class="page-header">
+                <h1 class="page-title">Challenges in Accessible Food Label Reading</h1>
+                <p style="text-align: center; color: var(--text-light); margin-top: 1rem; font-size: 1.1rem;">
+                    Understanding the key obstacles in developing effective food label reading systems
+                </p>
+            </div>
+
+            <!-- Interactive Presentation -->
+            <div class="challenges-presentation">
+                <div class="presentation-header">
+                    <h2 class="presentation-title">Key Implementation Challenges</h2>
+                </div>
+
+                <div class="presentation-container">
+                    <!-- Slide 1: Packaging Variability -->
+                    <div class="content-slide active" id="slide1">
+                        <div class="slide-header">
+                            <div class="slide-number">1</div>
+                            <h2 class="slide-title">Packaging Variability</h2>
+                        </div>
+
+                        <div class="slide-goal">
+                            <strong>Challenge:</strong> Food comes in bottles, cans, and boxes with very different designs.
+                        </div>
+
+                        <div class="problem-box">
+                            <strong>Problem:</strong> Food comes in bottles, cans, and boxes with very different designs.
+                        </div>
+
+                        <div class="issues-list">
+                            <h5><i class="fas fa-exclamation-triangle"></i> Key Issues:</h5>
+                            <ul>
+                                <li><strong>Curved surfaces distort text</strong> - Text wraps around cylindrical containers making it difficult to read</li>
+                                <li><strong>Glossy wrappers cause glare</strong> - Reflective surfaces create bright spots that obscure text</li>
+                                <li><strong>Nutrition labels often use tiny fonts</strong> - Small text size reduces OCR accuracy significantly</li>
+                            </ul>
+                        </div>
+
+                        <div class="research-insight">
+                            <h5><i class="fas fa-microscope"></i> Research Insight</h5>
+                            <p><a href="bibliography.html#ref1">Saputra et al. (2024)</a> [1] showed OCR accuracy dropped sharply when ingredient lists were wrapped around cylindrical packages.</p>
+                            <p><strong>Key Finding:</strong> Flat surfaces achieved 95% accuracy, while curved packaging dropped to 67% accuracy for the same text content.</p>
+                        </div>
+
+                        <p style="text-align: center; color: var(--text-light); margin-bottom: 1.5rem; font-style: italic;">
+                            💡 Hover over each challenge card to see real-world examples
+                        </p>
+
+                        <div class="challenge-grid">
+                            <div class="challenge-card">
+                                <div class="hover-hint-challenge">Hover to see sample image</div>
+                                <div class="challenge-card-inner">
+                                    <div class="challenge-card-front">
+                                        <div class="challenge-header">
+                                            <div class="challenge-icon">
+                                                <i class="fas fa-wine-bottle"></i>
+                                            </div>
+                                            <h4 class="challenge-title">Curved Surfaces</h4>
+                                        </div>
+                                        <p>Cylindrical bottles and cans cause text distortion, making character recognition extremely difficult for traditional OCR systems.</p>
+                                    </div>
+                                    <div class="challenge-card-back">
+                                        <img src="images/Curved_Surface.png" alt="Curved Surface Challenge Sample" class="challenge-image">
+                                        <div class="image-credits-challenge">Credits: Gemini 2.5 Flash</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="challenge-card">
+                                <div class="hover-hint-challenge">Hover to see sample image</div>
+                                <div class="challenge-card-inner">
+                                    <div class="challenge-card-front">
+                                        <div class="challenge-header">
+                                            <div class="challenge-icon">
+                                                <i class="fas fa-sun"></i>
+                                            </div>
+                                            <h4 class="challenge-title">Glare & Reflections</h4>
+                                        </div>
+                                        <p>Glossy packaging materials create bright reflections that can completely obscure important nutritional information.</p>
+                                    </div>
+                                    <div class="challenge-card-back">
+                                        <img src="images/Glare.png" alt="Glare Challenge Sample" class="challenge-image">
+                                        <div class="image-credits-challenge">Credits: Gemini 2.5 Flash</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="challenge-card">
+                                <div class="hover-hint-challenge">Hover to see sample image</div>
+                                <div class="challenge-card-inner">
+                                    <div class="challenge-card-front">
+                                        <div class="challenge-header">
+                                            <div class="challenge-icon">
+                                                <i class="fas fa-search-minus"></i>
+                                            </div>
+                                            <h4 class="challenge-title">Tiny Fonts</h4>
+                                        </div>
+                                        <p>Legal requirements often force manufacturers to use extremely small fonts for ingredient lists and nutritional data.</p>
+                                    </div>
+                                    <div class="challenge-card-back">
+                                        <img src="images/Tiny Font.png" alt="Tiny Font Challenge Sample" class="challenge-image">
+                                        <div class="image-credits-challenge">Credits: Gemini 2.5 Flash</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slide 2: Ambiguity in Dates & Labels -->
+                    <div class="content-slide" id="slide2">
+                        <div class="slide-header">
+                            <div class="slide-number">2</div>
+                            <h2 class="slide-title">Ambiguity in Dates & Labels</h2>
+                        </div>
+
+                        <div class="slide-goal">
+                            <strong>Challenge:</strong> Expiry dates are critical but often unclear and ambiguous.
+                        </div>
+
+                        <div class="problem-box">
+                            <strong>Problem:</strong> Expiry dates are critical but often unclear.
+                        </div>
+
+                        <div class="example-box">
+                            <h5><i class="fas fa-calendar-times"></i> Confusing Date Examples</h5>
+                            <div class="example-item">
+                                <strong>06/25</strong> could mean June 25th or June 2025
+                            </div>
+                            <div class="example-item">
+                                <strong>12/11/24</strong> varies by region (U.S. vs U.K.)
+                                <br><small style="color: var(--text-light);">US: December 11, 2024 | UK: 12 November 2024</small>
+                            </div>
+                            <div class="example-item">
+                                <strong>"Best before June 2025"</strong> vs <strong>"Use by 06/25"</strong>
+                                <br><small style="color: var(--text-light);">Different formats for the same information</small>
+                            </div>
+                        </div>
+
+                        <div class="research-insight">
+                            <h5><i class="fas fa-microscope"></i> Research Insight</h5>
+                            <p><a href="bibliography.html#ref2">Grumeza et al. (2024)</a> [2] combined OCR with LLMs to interpret dates better, but risks remain if misread.</p>
+                            <p><strong>Innovation:</strong> Using Large Language Models to understand context and resolve date ambiguities, improving interpretation accuracy from 73% to 89%.</p>
+                        </div>
+
+                        <div class="findings-grid">
+                            <div class="finding-card">
+                                <h5><i class="fas fa-exclamation-circle"></i> Safety Risk</h5>
+                                <p>Misinterpreting expiry dates can lead to food safety issues, especially critical for users who cannot visually verify the information.</p>
+                            </div>
+
+                            <div class="finding-card">
+                                <h5><i class="fas fa-globe"></i> Regional Variations</h5>
+                                <p>Date formats vary significantly across countries, making it difficult to create universally accurate systems.</p>
+                            </div>
+
+                            <div class="finding-card">
+                                <h5><i class="fas fa-font"></i> Format Inconsistency</h5>
+                                <p>Even within the same country, manufacturers use different date formats, creating interpretation challenges.</p>
+                            </div>
+                        </div>
+
+                        <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; margin-top: 2rem; border-left: 4px solid var(--primary-color);">
+                            <h5 style="color: var(--primary-color); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fas fa-shield-alt"></i> Critical Impact
+                            </h5>
+                            <p style="margin: 0; color: var(--text-dark);">
+                                For blind users, date misinterpretation isn't just inconvenient—it could be unsafe. A system that reads "06/25" as "June 25th" instead of "June 2025" could lead to consuming expired food.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Slide 3: Usability Limitations of Current Apps -->
+                    <div class="content-slide" id="slide3">
+                        <div class="slide-header">
+                            <div class="slide-number">3</div>
+                            <h2 class="slide-title">Usability Limitations of Current Apps</h2>
+                        </div>
+
+                        <div class="slide-goal">
+                            <strong>Challenge:</strong> Even accurate OCR fails if the interface is not blind-friendly.
+                        </div>
+
+                        <div class="problem-box">
+                            <strong>Problem:</strong> Even accurate OCR fails if the interface is not blind-friendly.
+                        </div>
+
+                        <div class="research-insight">
+                            <h5><i class="fas fa-microscope"></i> Research Findings</h5>
+                            <p><a href="bibliography.html#ref4">Bhagat et al. (2023)</a> [4] conducted usability studies with blind users testing popular food label reading apps.</p>
+                        </div>
+
+                        <div class="findings-grid">
+                            <div class="finding-card">
+                                <h5><i class="fas fa-compress-alt"></i> Preference for Summaries</h5>
+                                <p><strong>Finding:</strong> Users preferred short, clear summaries over full text.</p>
+                                <p style="font-size: 0.9rem; color: var(--text-light); margin-top: 0.5rem;">
+                                    Reading entire labels word-for-word was overwhelming and time-consuming for users.
+                                </p>
+                            </div>
+
+                            <div class="finding-card">
+                                <h5><i class="fas fa-tachometer-alt"></i> Speed Over Accuracy</h5>
+                                <p><strong>Finding:</strong> Response speed mattered more than perfect accuracy.</p>
+                                <p style="font-size: 0.9rem; color: var(--text-light); margin-top: 0.5rem;">
+                                    Users preferred 90% accurate instant results over 95% accurate results that took 10+ seconds.
+                                </p>
+                            </div>
+
+                            <div class="finding-card">
+                                <h5><i class="fas fa-hand-pointer"></i> Navigation Complexity</h5>
+                                <p><strong>Finding:</strong> Too many taps or small buttons made apps inaccessible.</p>
+                                <p style="font-size: 0.9rem; color: var(--text-light); margin-top: 0.5rem;">
+                                    Complex navigation workflows frustrated users and reduced app adoption.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="example-box">
+                            <h5><i class="fas fa-times-circle"></i> Common Usability Problems</h5>
+                            <div class="issues-list" style="background: transparent; padding: 0;">
+                                <ul style="margin-top: 1rem;">
+                                    <li><strong>Verbose Output:</strong> Apps that read entire ingredient lists without summarization</li>
+                                    <li><strong>Slow Processing:</strong> Long wait times for OCR processing and result delivery</li>
+                                    <li><strong>Complex Menus:</strong> Multi-level navigation requiring multiple taps to access features</li>
+                                    <li><strong>Small Touch Targets:</strong> Buttons too small for accurate touch interaction</li>
+                                    <li><strong>Poor Audio Feedback:</strong> Unclear or missing audio cues for user actions</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div style="background: linear-gradient(135deg, #e8f5e8, #f0f8ff); border-radius: 12px; padding: 2rem; margin-top: 2rem; text-align: center;">
+                            <h5 style="color: var(--primary-color); margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                                <i class="fas fa-lightbulb"></i> Key Insight
+                            </h5>
+                            <p style="font-size: 1.1rem; margin: 0;">
+                                <strong>Technical accuracy alone is not enough.</strong> The user experience design is equally critical for creating truly accessible food label reading systems.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide Navigation Controls -->
+                <div class="slide-controls">
+                    <button class="slide-nav-btn" id="prevBtn" onclick="changeSlide(-1)">
+                        <i class="fas fa-chevron-left"></i>
+                        Previous
+                    </button>
+
+                    <div class="slide-indicator">
+                        <div class="indicator-dot active" onclick="goToSlide(1)"></div>
+                        <div class="indicator-dot" onclick="goToSlide(2)"></div>
+                        <div class="indicator-dot" onclick="goToSlide(3)"></div>
+                        <span class="slide-counter">1 / 3</span>
+                    </div>
+
+                    <button class="slide-nav-btn" id="nextBtn" onclick="changeSlide(1)">
+                        Next
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Page Navigation -->
+            <div class="page-navigation">
+                <a href="datasets.html" class="nav-button">
+                    <i class="fas fa-arrow-left"></i>
+                    Previous: Datasets
+                </a>
+                <a href="conclusion.html" class="nav-button">
+                    Next: Conclusion
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        // Sidebar functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+            function toggleSidebar() {
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.toggle('show');
+                    sidebarOverlay.classList.toggle('show');
+                } else {
+                    sidebar.classList.toggle('collapsed');
+                    mainContent.classList.toggle('expanded');
+                }
+            }
+
+            function closeSidebar() {
+                sidebar.classList.remove('show');
+                sidebarOverlay.classList.remove('show');
+            }
+
+            sidebarToggle.addEventListener('click', toggleSidebar);
+            sidebarOverlay.addEventListener('click', closeSidebar);
+
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768) {
+                    sidebar.classList.remove('show');
+                    sidebarOverlay.classList.remove('show');
+                }
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeSidebar();
+                }
+            });
+        });
+
+        // Slide presentation functionality
+        let currentSlide = 1;
+        const totalSlides = 3;
+
+        function updateSlideDisplay() {
+            // Hide all slides
+            for (let i = 1; i <= totalSlides; i++) {
+                const slide = document.getElementById(`slide${i}`);
+                if (slide) {
+                    slide.classList.remove('active', 'prev');
+                    if (i < currentSlide) {
+                        slide.classList.add('prev');
+                    }
+                }
+            }
+
+            // Show current slide
+            const activeSlide = document.getElementById(`slide${currentSlide}`);
+            if (activeSlide) {
+                activeSlide.classList.add('active');
+            }
+
+            // Update indicators
+            const indicators = document.querySelectorAll('.indicator-dot');
+            indicators.forEach((dot, index) => {
+                dot.classList.toggle('active', index + 1 === currentSlide);
+            });
+
+            // Update counter
+            const counter = document.querySelector('.slide-counter');
+            if (counter) {
+                counter.textContent = `${currentSlide} / ${totalSlides}`;
+            }
+
+            // Update navigation buttons
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+
+            if (prevBtn) {
+                prevBtn.disabled = currentSlide === 1;
+            }
+            if (nextBtn) {
+                nextBtn.disabled = currentSlide === totalSlides;
+            }
+        }
+
+        function changeSlide(direction) {
+            const newSlide = currentSlide + direction;
+            if (newSlide >= 1 && newSlide <= totalSlides) {
+                currentSlide = newSlide;
+                updateSlideDisplay();
+            }
+        }
+
+        function goToSlide(slideNumber) {
+            if (slideNumber >= 1 && slideNumber <= totalSlides) {
+                currentSlide = slideNumber;
+                updateSlideDisplay();
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowLeft') {
+                changeSlide(-1);
+            } else if (e.key === 'ArrowRight') {
+                changeSlide(1);
+            }
+        });
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateSlideDisplay();
+
+            // Audio Player Functionality
+            const audioPlayerBtn = document.getElementById('audioPlayerBtn');
+            const audioPlayerContainer = document.getElementById('audioPlayerContainer');
+            const closeAudioBtn = document.getElementById('closeAudioBtn');
+            const pageAudio = document.getElementById('pageAudio');
+            const audioPlayPause = document.getElementById('audioPlayPause');
+            const audioProgress = document.getElementById('audioProgress');
+            const audioProgressBar = document.getElementById('audioProgressBar');
+            const currentTime = document.getElementById('currentTime');
+            const totalTime = document.getElementById('totalTime');
+
+
+            // Open audio player
+            audioPlayerBtn.addEventListener('click', function() {
+                audioPlayerContainer.classList.add('active');
+            });
+
+            // Close audio player
+            closeAudioBtn.addEventListener('click', function() {
+                audioPlayerContainer.classList.remove('active');
+                pageAudio.pause();
+                updatePlayPauseIcon();
+            });
+
+            // Play/Pause functionality
+            audioPlayPause.addEventListener('click', function() {
+                if (pageAudio.paused) {
+                    pageAudio.play();
+                } else {
+                    pageAudio.pause();
+                }
+                updatePlayPauseIcon();
+            });
+
+            // Update play/pause icon
+            function updatePlayPauseIcon() {
+                const icon = audioPlayPause.querySelector('i');
+                if (pageAudio.paused) {
+                    icon.className = 'fas fa-play';
+                } else {
+                    icon.className = 'fas fa-pause';
+                }
+            }
+
+            // Format time
+            function formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+
+            // Update progress bar
+            pageAudio.addEventListener('timeupdate', function() {
+                const progress = (pageAudio.currentTime / pageAudio.duration) * 100;
+                audioProgressBar.style.width = progress + '%';
+                currentTime.textContent = formatTime(pageAudio.currentTime);
+            });
+
+            // Set total time when metadata loads
+            pageAudio.addEventListener('loadedmetadata', function() {
+                totalTime.textContent = formatTime(pageAudio.duration);
+            });
+
+            // Click on progress bar to seek
+            audioProgress.addEventListener('click', function(e) {
+                const rect = audioProgress.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const width = rect.width;
+                const clickTime = (clickX / width) * pageAudio.duration;
+                pageAudio.currentTime = clickTime;
+            });
+
+            // Auto-update play/pause icon when audio ends
+            pageAudio.addEventListener('ended', function() {
+                updatePlayPauseIcon();
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conclusion - Accessible Food Label Reading with Computer Vision</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #1a365d;
+            --secondary-color: #2d3748;
+            --accent-color: #4a5568;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --bg-primary: #f7fafc;
+            --bg-secondary: #ffffff;
+            --border-color: #e2e8f0;
+            --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --shadow-medium: 0 8px 25px rgba(0, 0, 0, 0.12);
+            --sidebar-width: 280px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background-color: var(--bg-primary);
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: var(--sidebar-width);
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            box-shadow: var(--shadow-soft);
+            transform: translateX(0);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .sidebar-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .sidebar-nav {
+            padding: 1rem 0;
+        }
+
+        .nav-item {
+            margin: 0.25rem 0;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            color: var(--text-dark);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background-color: var(--bg-primary);
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+        }
+
+        .nav-link.active {
+            background-color: var(--bg-primary);
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .nav-link i {
+            margin-right: 0.75rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            transition: margin-left 0.3s ease;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        .top-navbar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 1.5rem;
+            box-shadow: var(--shadow-soft);
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+
+        .sidebar-toggle {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+
+        .sidebar-toggle:hover {
+            background-color: var(--bg-primary);
+        }
+
+        .content-area {
+            padding: 2rem;
+        }
+
+        .page-header {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .page-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .content-section {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-color);
+        }
+
+        /* Reading Time */
+        .reading-time {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-light);
+            font-size: 0.9rem;
+            background: var(--bg-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .reading-time i {
+            color: var(--primary-color);
+        }
+
+        /* Audio Player */
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .audio-player-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .audio-player-btn:hover {
+            background: var(--secondary-color);
+            transform: scale(1.05);
+        }
+
+        .audio-player-container {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 25px;
+            padding: 1rem 1.5rem;
+            box-shadow: var(--shadow-medium);
+            z-index: 1000;
+            min-width: 300px;
+        }
+
+        .audio-player-container.active {
+            display: block;
+        }
+
+        .audio-player-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .audio-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .close-audio-btn {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-audio-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .audio-controls-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .audio-play-pause {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .audio-play-pause:hover {
+            background: var(--secondary-color);
+        }
+
+        .audio-progress-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .audio-time {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            min-width: 35px;
+        }
+
+        .audio-progress {
+            flex: 1;
+            height: 4px;
+            background: var(--border-color);
+            border-radius: 2px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .audio-progress-bar {
+            height: 100%;
+            background: var(--primary-color);
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+
+        /* Journey Layout */
+        .conclusion-journey {
+            position: relative;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Journey Timeline */
+        .journey-timeline {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(to bottom, var(--primary-color), var(--accent-color));
+            transform: translateX(-50%);
+            border-radius: 2px;
+        }
+
+        /* Journey Sections */
+        .journey-section {
+            position: relative;
+            margin: 4rem 0;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            min-height: 200px;
+        }
+
+        .journey-section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .journey-section:nth-child(odd) .section-content {
+            margin-right: 55%;
+            text-align: right;
+        }
+
+        .journey-section:nth-child(even) .section-content {
+            margin-left: 55%;
+            text-align: left;
+        }
+
+        /* Journey Node */
+        .journey-node {
+            position: absolute;
+            left: 50%;
+            top: 2rem;
+            width: 60px;
+            height: 60px;
+            background: var(--bg-secondary);
+            border: 4px solid var(--primary-color);
+            border-radius: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            box-shadow: var(--shadow-medium);
+            z-index: 10;
+        }
+
+        .journey-node.special {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            width: 80px;
+            height: 80px;
+            font-size: 2rem;
+        }
+
+        /* Section Content */
+        .section-content {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: var(--shadow-medium);
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .section-content::before {
+            content: '';
+            position: absolute;
+            top: 2rem;
+            width: 0;
+            height: 0;
+            border: 15px solid transparent;
+        }
+
+        .journey-section:nth-child(odd) .section-content::before {
+            right: -30px;
+            border-left-color: var(--bg-secondary);
+        }
+
+        .journey-section:nth-child(even) .section-content::before {
+            left: -30px;
+            border-right-color: var(--bg-secondary);
+        }
+
+        .section-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .section-title i {
+            color: var(--accent-color);
+        }
+
+        /* Learning Cards */
+        .learning-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .learning-card {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border-left: 4px solid var(--primary-color);
+            transition: all 0.3s ease;
+        }
+
+        .learning-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .learning-card h4 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .learning-card h4 i {
+            color: var(--accent-color);
+        }
+
+        /* Research Citations */
+        .citation-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .citation-link:hover {
+            background: var(--bg-primary);
+            text-decoration: underline;
+        }
+
+        /* Future Directions */
+        .future-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .future-card {
+            background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .future-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .future-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .future-card h4 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        /* Key Takeaway */
+        .key-takeaway {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            border-radius: 20px;
+            padding: 3rem;
+            text-align: center;
+            margin: 3rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .key-takeaway::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(180deg); }
+        }
+
+        .takeaway-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .takeaway-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+
+        .takeaway-text {
+            font-size: 1.2rem;
+            line-height: 1.8;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Final Quiz Styles */
+        .final-quiz-section {
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            padding: 3rem;
+            margin: 4rem 0;
+            box-shadow: var(--shadow-medium);
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .quiz-intro {
+            margin-bottom: 3rem;
+        }
+
+        .quiz-intro h2 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .quiz-intro p {
+            font-size: 1.1rem;
+            color: var(--text-light);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .start-final-quiz-btn {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            border: none;
+            padding: 1.2rem 3rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-soft);
+            display: inline-flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .start-final-quiz-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .start-final-quiz-btn:active {
+            transform: translateY(-1px);
+        }
+
+        /* Quiz Content Styles */
+        .quiz-content {
+            display: none;
+            text-align: left;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .quiz-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .quiz-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .quiz-progress {
+            background: var(--bg-primary);
+            border-radius: 10px;
+            height: 8px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+
+        .quiz-progress-bar {
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .question-container {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .question-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .question-number {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .question-type {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .question-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .options-container {
+            display: grid;
+            gap: 0.8rem;
+        }
+
+        .option {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .option:hover {
+            border-color: var(--primary-color);
+            background: var(--bg-primary);
+        }
+
+        .option.selected {
+            border-color: var(--primary-color);
+            background: var(--bg-primary);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .option.correct {
+            border-color: #4caf50;
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .option.incorrect {
+            border-color: #f44336;
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .option-letter {
+            width: 30px;
+            height: 30px;
+            background: var(--text-light);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .option.correct .option-letter {
+            background: #4caf50;
+        }
+
+        .option.incorrect .option-letter {
+            background: #f44336;
+        }
+
+        .option.selected .option-letter {
+            background: var(--primary-color);
+        }
+
+        .true-false-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .tf-option {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .tf-option:hover {
+            border-color: var(--primary-color);
+            background: var(--bg-primary);
+        }
+
+        .tf-option.selected {
+            border-color: var(--primary-color);
+            background: var(--bg-primary);
+            color: var(--primary-color);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .tf-option.correct {
+            border-color: #4caf50;
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .tf-option.incorrect {
+            border-color: #f44336;
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .short-answer-container {
+            margin-top: 1rem;
+        }
+
+        .short-answer-input {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .short-answer-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(26, 54, 93, 0.1);
+        }
+
+        .quiz-actions {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 3rem;
+        }
+
+        .quiz-button {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .check-answers-btn {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .check-answers-btn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .reset-btn {
+            background: var(--text-light);
+            color: white;
+        }
+
+        .reset-btn:hover {
+            background: var(--accent-color);
+            transform: translateY(-2px);
+        }
+
+        .quiz-results {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-top: 2rem;
+            text-align: center;
+            display: none;
+        }
+
+        .score-display {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .score-message {
+            font-size: 1.1rem;
+            color: var(--text-dark);
+        }
+
+        /* Navigation Buttons */
+        .page-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 3rem;
+            padding: 1.5rem 0;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .nav-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .nav-button:hover {
+            background: var(--secondary-color);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .content-area {
+                padding: 1rem;
+            }
+
+            .page-header {
+                padding: 1.5rem;
+            }
+
+            .page-title {
+                font-size: 2rem;
+            }
+
+            .page-navigation {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            /* Mobile Journey Layout */
+            .journey-timeline {
+                left: 2rem;
+            }
+
+            .journey-node {
+                left: 2rem;
+                width: 50px;
+                height: 50px;
+                font-size: 1.2rem;
+            }
+
+            .journey-node.special {
+                width: 60px;
+                height: 60px;
+                font-size: 1.5rem;
+            }
+
+            .journey-section:nth-child(odd) .section-content,
+            .journey-section:nth-child(even) .section-content {
+                margin-left: 5rem;
+                margin-right: 0;
+                text-align: left;
+            }
+
+            .journey-section:nth-child(odd) .section-content::before,
+            .journey-section:nth-child(even) .section-content::before {
+                left: -30px;
+                right: auto;
+                border-left-color: transparent;
+                border-right-color: var(--bg-secondary);
+            }
+
+            .learning-grid,
+            .future-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .section-title {
+                font-size: 1.5rem;
+            }
+
+            .takeaway-title {
+                font-size: 1.8rem;
+            }
+
+            .takeaway-text {
+                font-size: 1.1rem;
+            }
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2 class="sidebar-title">Accessible Food Label Reading</h2>
+        </div>
+        <div class="sidebar-nav">
+            <div class="nav-item">
+                <a href="introduction.html" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    Introduction
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="techniques.html" class="nav-link">
+                    <i class="fas fa-cogs"></i>
+                    Techniques
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="interaction.html" class="nav-link">
+                    <i class="fas fa-hand-pointer"></i>
+                    Interaction
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="datasets.html" class="nav-link">
+                    <i class="fas fa-database"></i>
+                    Datasets
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="challenges.html" class="nav-link">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Challenges
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="conclusion.html" class="nav-link active">
+                    <i class="fas fa-flag-checkered"></i>
+                    Conclusion
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="conclusion.html#quiz" class="nav-link">
+                    <i class="fas fa-graduation-cap"></i>
+                    Final Quiz
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="bibliography.html" class="nav-link">
+                    <i class="fas fa-book"></i>
+                    Bibliography
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Audio Player Container -->
+    <div class="audio-player-container" id="audioPlayerContainer">
+        <div class="audio-player-header">
+            <span class="audio-title">Conclusion Audio</span>
+            <button class="close-audio-btn" id="closeAudioBtn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="audio-controls-container">
+            <button class="audio-play-pause" id="audioPlayPause">
+                <i class="fas fa-play"></i>
+            </button>
+            <div class="audio-progress-container">
+                <span class="audio-time" id="currentTime">0:00</span>
+                <div class="audio-progress" id="audioProgress">
+                    <div class="audio-progress-bar" id="audioProgressBar"></div>
+                </div>
+                <span class="audio-time" id="totalTime">0:00</span>
+            </div>
+        </div>
+        <audio id="pageAudio" preload="metadata">
+            <source src="audio/Conclusion.m4a" type="audio/mp4">
+            <source src="audio/Conclusion.mp3" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <!-- Top Navigation Bar -->
+        <nav class="top-navbar">
+            <div class="d-flex justify-content-between align-items-center">
+                <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar navigation">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="audio-controls">
+                    <div class="reading-time">
+                        <i class="fas fa-clock"></i>
+                        <span>3 min read</span>
+                    </div>
+                    <button class="audio-player-btn" id="audioPlayerBtn" aria-label="Play page audio">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Content Area -->
+        <div class="content-area">
+            <div class="page-header">
+                <h1 class="page-title">Conclusion</h1>
+                <p style="text-align: center; color: var(--text-light); margin-top: 1rem; font-size: 1.1rem;">
+                    Reflecting on our journey through accessible food label reading technology
+                </p>
+            </div>
+
+            <!-- Journey Layout -->
+            <div class="conclusion-journey">
+                <div class="journey-timeline"></div>
+
+                <!-- What We Learned -->
+                <div class="journey-section">
+                    <div class="journey-node">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <div class="section-content">
+                        <h2 class="section-title">
+                            <i class="fas fa-graduation-cap"></i>
+                            What We Learned
+                        </h2>
+
+                        <div class="learning-grid">
+                            <div class="learning-card">
+                                <h4><i class="fas fa-eye"></i> OCR Foundation</h4>
+                                <p>OCR is the backbone of accessible food label reading, but it faces real-world hurdles like small fonts, glare, and curved packaging <a href="bibliography.html#ref1" class="citation-link">[1]</a><a href="bibliography.html#ref3" class="citation-link">[3]</a>.</p>
+                            </div>
+
+                            <div class="learning-card">
+                                <h4><i class="fas fa-brain"></i> Context-Aware AI</h4>
+                                <p>Specialized tasks — such as allergen detection <a href="bibliography.html#ref5" class="citation-link">[5]</a> and expiry date recognition <a href="bibliography.html#ref2" class="citation-link">[2]</a> — need more than text extraction. They require context-aware AI to avoid dangerous mistakes.</p>
+                            </div>
+
+                            <div class="learning-card">
+                                <h4><i class="fas fa-mobile-alt"></i> User Preferences</h4>
+                                <p>Assistive tools today (Seeing AI, Lookout, Envision AI) are useful but limited. Users value speed, clarity, and simple navigation more than raw accuracy <a href="bibliography.html#ref4" class="citation-link">[4]</a>.</p>
+                            </div>
+
+                            <div class="learning-card">
+                                <h4><i class="fas fa-database"></i> Dataset Bottleneck</h4>
+                                <p>Datasets remain a bottleneck. Without diverse, supermarket-quality images, models cannot generalize well.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- The Bigger Picture -->
+                <div class="journey-section">
+                    <div class="journey-node">
+                        <i class="fas fa-globe"></i>
+                    </div>
+                    <div class="section-content">
+                        <h2 class="section-title">
+                            <i class="fas fa-expand-arrows-alt"></i>
+                            The Bigger Picture
+                        </h2>
+
+                        <p style="font-size: 1.1rem; margin-bottom: 2rem;">
+                            Food labels are not just text — they are <strong>health and safety information</strong>.
+                        </p>
+
+                        <p style="font-size: 1.1rem; margin-bottom: 2rem;">
+                            For blind and visually impaired users, independence depends on tools that deliver this information <strong>fast, accurately, and understandably</strong>.
+                        </p>
+
+                        <div style="background: var(--bg-primary); border-radius: 12px; padding: 2rem; border-left: 4px solid var(--primary-color);">
+                            <h4 style="color: var(--primary-color); margin-bottom: 1rem;">Research Evolution</h4>
+                            <p>Research is moving from simple OCR to AI pipelines that combine:</p>
+                            <ul style="margin-top: 1rem;">
+                                <li><strong>Preprocessing</strong> (handling glare, blur, curved text)</li>
+                                <li><strong>Deep learning OCR models</strong> (CRNN, Transformers, Vision-Language)</li>
+                                <li><strong>Intelligent interfaces</strong> (voice queries, summaries)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Future Directions -->
+                <div class="journey-section">
+                    <div class="journey-node">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <div class="section-content">
+                        <h2 class="section-title">
+                            <i class="fas fa-arrow-right"></i>
+                            Future Directions
+                        </h2>
+
+                        <div class="future-grid">
+                            <div class="future-card">
+                                <div class="future-icon">
+                                    <i class="fas fa-images"></i>
+                                </div>
+                                <h4>More Realistic Datasets</h4>
+                                <p>Including multilingual, cluttered, and damaged packaging.</p>
+                            </div>
+
+                            <div class="future-card">
+                                <div class="future-icon">
+                                    <i class="fas fa-brain"></i>
+                                </div>
+                                <h4>Context-Aware AI</h4>
+                                <p>Using LLMs alongside OCR to resolve ambiguities (e.g., expiry dates).</p>
+                            </div>
+
+                            <div class="future-card">
+                                <div class="future-icon">
+                                    <i class="fas fa-user-friends"></i>
+                                </div>
+                                <h4>User-Centered Design</h4>
+                                <p>Faster responses, one-tap interaction, and meaningful summaries.</p>
+                            </div>
+
+                            <div class="future-card">
+                                <div class="future-icon">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </div>
+                                <h4>Daily Life Integration</h4>
+                                <p>Grocery shopping, meal planning, and dietary health apps.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Key Takeaway -->
+                <div class="journey-section" style="position: relative;">
+                    <div class="journey-node special" style="position: absolute; top: -2rem; left: 50%; transform: translateX(-50%); z-index: 5;">
+                        <i class="fas fa-key"></i>
+                    </div>
+                    <div class="key-takeaway" style="margin-top: 4rem; margin-bottom: 4rem; position: relative; z-index: 1;">
+                        <div class="takeaway-content">
+                            <h2 class="takeaway-title">Key Takeaway</h2>
+                            <p class="takeaway-text">
+                                Accessible food label reading is not just a technical challenge — it is a <strong>human-centered problem</strong>. Progress requires collaboration between computer vision researchers, accessibility designers, and the blind community to create tools that are reliable, fast, and truly usable.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Final Quiz Section -->
+            <div class="final-quiz-section" id="quiz">
+                <!-- Quiz Introduction -->
+                <div class="quiz-intro" id="quizIntro">
+                    <h2>
+                        <i class="fas fa-graduation-cap"></i>
+                        Final Quiz
+                    </h2>
+                    <p>
+                        Test your comprehensive understanding of accessible food label reading technology.
+                        This final assessment covers all the key concepts from our tutorial.
+                    </p>
+                    <button class="start-final-quiz-btn" onclick="startFinalQuiz()">
+                        <i class="fas fa-play"></i>
+                        Start Final Quiz
+                    </button>
+                </div>
+
+                <!-- Quiz Content -->
+                <div class="quiz-content" id="quizContent">
+                    <div class="quiz-header">
+                        <h2 class="quiz-title">Final Assessment</h2>
+                        <div class="quiz-progress">
+                            <div class="quiz-progress-bar" id="progressBar"></div>
+                        </div>
+                        <p style="color: var(--text-light);">7 questions • 6 graded + 1 reflection</p>
+                    </div>
+
+                    <!-- Question 1 -->
+                    <div class="question-container">
+                        <div class="question-header">
+                            <div class="question-number">1</div>
+                            <span class="question-type">MCQ</span>
+                        </div>
+                        <div class="question-text">
+                            Why is voice access considered the most natural interaction mode for blind users?
+                        </div>
+                        <div class="options-container">
+                            <div class="option" data-question="1" data-option="A">
+                                <div class="option-letter">A</div>
+                                <span>It avoids screen clutter</span>
+                            </div>
+                            <div class="option" data-question="1" data-option="B" data-correct="true">
+                                <div class="option-letter">B</div>
+                                <span>It allows faster and more intuitive queries</span>
+                            </div>
+                            <div class="option" data-question="1" data-option="C">
+                                <div class="option-letter">C</div>
+                                <span>It improves image quality</span>
+                            </div>
+                            <div class="option" data-question="1" data-option="D">
+                                <div class="option-letter">D</div>
+                                <span>It reduces device cost</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Question 2 -->
+                    <div class="question-container">
+                        <div class="question-header">
+                            <div class="question-number">2</div>
+                            <span class="question-type">True/False</span>
+                        </div>
+                        <div class="question-text">
+                            Effective voice assistants for food label reading should provide short, focused answers rather than reading the entire label word-for-word.
+                        </div>
+                        <div class="true-false-container">
+                            <div class="tf-option" data-question="2" data-option="true" data-correct="true">
+                                <i class="fas fa-check" style="color: #4caf50; margin-right: 0.5rem;"></i>
+                                True
+                            </div>
+                            <div class="tf-option" data-question="2" data-option="false">
+                                <i class="fas fa-times" style="color: #f44336; margin-right: 0.5rem;"></i>
+                                False
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Question 3 -->
+                    <div class="question-container">
+                        <div class="question-header">
+                            <div class="question-number">3</div>
+                            <span class="question-type">MCQ</span>
+                        </div>
+                        <div class="question-text">
+                            When evaluating assistive tools for food label reading, what factor did users often prioritize the most?
+                        </div>
+                        <div class="options-container">
+                            <div class="option" data-question="3" data-option="A">
+                                <div class="option-letter">A</div>
+                                <span>Full-text accuracy</span>
+                            </div>
+                            <div class="option" data-question="3" data-option="B" data-correct="true">
+                                <div class="option-letter">B</div>
+                                <span>Response speed</span>
+                            </div>
+                            <div class="option" data-question="3" data-option="C">
+                                <div class="option-letter">C</div>
+                                <span>Advanced graphics</span>
+                            </div>
+                            <div class="option" data-question="3" data-option="D">
+                                <div class="option-letter">D</div>
+                                <span>Multilingual menus</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Question 4 -->
+                    <div class="question-container">
+                        <div class="question-header">
+                            <div class="question-number">4</div>
+                            <span class="question-type">MCQ</span>
+                        </div>
+                        <div class="question-text">
+                            Which preprocessing technique improves OCR results on curved or glare-affected food packages?
+                        </div>
+                        <div class="options-container">
+                            <div class="option" data-question="4" data-option="A">
+                                <div class="option-letter">A</div>
+                                <span>Audio filtering</span>
+                            </div>
+                            <div class="option" data-question="4" data-option="B" data-correct="true">
+                                <div class="option-letter">B</div>
+                                <span>Image deskewing and denoising</span>
+                            </div>
+                            <div class="option" data-question="4" data-option="C">
+                                <div class="option-letter">C</div>
+                                <span>Barcode translation</span>
+                            </div>
+                            <div class="option" data-question="4" data-option="D">
+                                <div class="option-letter">D</div>
+                                <span>Data encryption</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Question 5 -->
+                    <div class="question-container">
+                        <div class="question-header">
+                            <div class="question-number">5</div>
+                            <span class="question-type">True/False</span>
+                        </div>
+                        <div class="question-text">
+                            Datasets for food label reading must reflect real supermarket conditions to ensure systems perform well in practice.
+                        </div>
+                        <div class="true-false-container">
+                            <div class="tf-option" data-question="5" data-option="true" data-correct="true">
+                                <i class="fas fa-check" style="color: #4caf50; margin-right: 0.5rem;"></i>
+                                True
+                            </div>
+                            <div class="tf-option" data-question="5" data-option="false">
+                                <i class="fas fa-times" style="color: #f44336; margin-right: 0.5rem;"></i>
+                                False
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Question 6 -->
+                    <div class="question-container">
+                        <div class="question-header">
+                            <div class="question-number">6</div>
+                            <span class="question-type">MCQ</span>
+                        </div>
+                        <div class="question-text">
+                            Which recognition task directly impacts health and safety for blind users?
+                        </div>
+                        <div class="options-container">
+                            <div class="option" data-question="6" data-option="A">
+                                <div class="option-letter">A</div>
+                                <span>Brand logo recognition</span>
+                            </div>
+                            <div class="option" data-question="6" data-option="B" data-correct="true">
+                                <div class="option-letter">B</div>
+                                <span>Expiration date and allergen detection</span>
+                            </div>
+                            <div class="option" data-question="6" data-option="C">
+                                <div class="option-letter">C</div>
+                                <span>Price tag classification</span>
+                            </div>
+                            <div class="option" data-question="6" data-option="D">
+                                <div class="option-letter">D</div>
+                                <span>Background color detection</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Question 7 -->
+                    <div class="question-container">
+                        <div class="question-header">
+                            <div class="question-number">7</div>
+                            <span class="question-type">Short Answer</span>
+                        </div>
+                        <div class="question-text">
+                            List one major challenge in making food label reading reliable for blind users.
+                        </div>
+                        <div class="short-answer-container">
+                            <textarea
+                                class="short-answer-input"
+                                data-question="7"
+                                placeholder="Enter your answer here... (e.g., small fonts, poor lighting, cluttered packaging, speed vs. accuracy trade-offs, etc.)"
+                                rows="3"
+                            ></textarea>
+                            <p style="font-size: 0.9rem; color: var(--text-light); margin-top: 0.5rem;">
+                                <i class="fas fa-info-circle"></i> This question is for reflection and is not graded.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="quiz-actions">
+                        <button class="quiz-button check-answers-btn" onclick="checkFinalQuizAnswers()">
+                            <i class="fas fa-check-circle" style="margin-right: 0.5rem;"></i>
+                            Check Answers
+                        </button>
+                        <button class="quiz-button reset-btn" onclick="resetFinalQuiz()">
+                            <i class="fas fa-redo" style="margin-right: 0.5rem;"></i>
+                            Reset Quiz
+                        </button>
+                    </div>
+
+                    <div class="quiz-results" id="quizResults">
+                        <div class="score-display" id="scoreDisplay"></div>
+                        <div class="score-message" id="scoreMessage"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page Navigation -->
+            <div class="page-navigation">
+                <a href="challenges.html" class="nav-button">
+                    <i class="fas fa-arrow-left"></i>
+                    Previous: Challenges
+                </a>
+                <a href="bibliography.html" class="nav-button">
+                    Next: Bibliography
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        // Sidebar functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+            function toggleSidebar() {
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.toggle('show');
+                    sidebarOverlay.classList.toggle('show');
+                } else {
+                    sidebar.classList.toggle('collapsed');
+                    mainContent.classList.toggle('expanded');
+                }
+            }
+
+            function closeSidebar() {
+                sidebar.classList.remove('show');
+                sidebarOverlay.classList.remove('show');
+            }
+
+            sidebarToggle.addEventListener('click', toggleSidebar);
+            sidebarOverlay.addEventListener('click', closeSidebar);
+
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768) {
+                    sidebar.classList.remove('show');
+                    sidebarOverlay.classList.remove('show');
+                }
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeSidebar();
+                }
+            });
+        });
+
+        // Journey Animation
+        document.addEventListener('DOMContentLoaded', function() {
+            // Intersection Observer for scroll animations
+            const observerOptions = {
+                threshold: 0.2,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver(function(entries) {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, observerOptions);
+
+            // Observe all journey sections
+            const journeySections = document.querySelectorAll('.journey-section');
+            journeySections.forEach(section => {
+                observer.observe(section);
+            });
+
+            // Add staggered animation delays
+            journeySections.forEach((section, index) => {
+                section.style.transitionDelay = `${index * 0.2}s`;
+            });
+
+            // Smooth scrolling for citation links
+            const citationLinks = document.querySelectorAll('.citation-link');
+            citationLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    // Add a subtle click effect
+                    this.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1)';
+                    }, 150);
+                });
+            });
+
+            // Add hover effects to learning cards
+            const learningCards = document.querySelectorAll('.learning-card');
+            learningCards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.borderLeftWidth = '6px';
+                });
+
+                card.addEventListener('mouseleave', function() {
+                    this.style.borderLeftWidth = '4px';
+                });
+            });
+
+            // Key takeaway is now positioned normally without parallax
+        });
+
+        // Final Quiz functionality
+        function startFinalQuiz() {
+            document.getElementById('quizIntro').style.display = 'none';
+            document.getElementById('quizContent').style.display = 'block';
+            updateQuizProgress();
+        }
+
+        function selectQuizOption(element) {
+            const question = element.getAttribute('data-question');
+            const questionContainer = element.closest('.question-container');
+
+            // Remove selection from other options in the same question
+            const otherOptions = questionContainer.querySelectorAll('.option, .tf-option');
+            otherOptions.forEach(option => {
+                option.classList.remove('selected');
+            });
+
+            // Select this option
+            element.classList.add('selected');
+            updateQuizProgress();
+        }
+
+        function updateQuizProgress() {
+            const totalQuestions = 6; // Only graded questions
+            const answeredQuestions = document.querySelectorAll('.option.selected, .tf-option.selected').length;
+            const progressPercentage = (answeredQuestions / totalQuestions) * 100;
+
+            const progressBar = document.getElementById('progressBar');
+            if (progressBar) {
+                progressBar.style.width = progressPercentage + '%';
+            }
+        }
+
+        function checkFinalQuizAnswers() {
+            const questions = document.querySelectorAll('.question-container');
+            let correctAnswers = 0;
+            let totalGradedQuestions = 6; // Questions 1-6 are graded
+
+            questions.forEach((question, index) => {
+                const questionNumber = index + 1;
+
+                // Skip question 7 (short answer, ungraded)
+                if (questionNumber === 7) return;
+
+                const selectedOption = question.querySelector('.option.selected, .tf-option.selected');
+                const correctOption = question.querySelector('[data-correct="true"]');
+
+                if (selectedOption && selectedOption.hasAttribute('data-correct')) {
+                    correctAnswers++;
+                    selectedOption.classList.add('correct');
+                } else {
+                    if (selectedOption) {
+                        selectedOption.classList.add('incorrect');
+                    }
+                    if (correctOption) {
+                        correctOption.classList.add('correct');
+                    }
+                }
+            });
+
+            // Show results
+            const resultsDiv = document.getElementById('quizResults');
+            const scoreDisplay = document.getElementById('scoreDisplay');
+            const scoreMessage = document.getElementById('scoreMessage');
+
+            const percentage = Math.round((correctAnswers / totalGradedQuestions) * 100);
+            scoreDisplay.textContent = `${correctAnswers}/${totalGradedQuestions} (${percentage}%)`;
+
+            if (percentage === 100) {
+                scoreMessage.innerHTML = `
+                    <strong>🎉 Perfect Score!</strong><br>
+                    Congratulations! You have mastered all the key concepts of accessible food label reading technology.
+                    You're ready to apply this knowledge in real-world applications.
+                `;
+            } else if (percentage >= 83) {
+                scoreMessage.innerHTML = `
+                    <strong>🌟 Excellent!</strong><br>
+                    You have a strong understanding of accessible food label reading concepts.
+                    Great work completing this tutorial!
+                `;
+            } else if (percentage >= 67) {
+                scoreMessage.innerHTML = `
+                    <strong>👍 Good Job!</strong><br>
+                    You understand most of the key concepts. Consider reviewing the areas you missed
+                    to strengthen your knowledge.
+                `;
+            } else {
+                scoreMessage.innerHTML = `
+                    <strong>📚 Keep Learning!</strong><br>
+                    Review the tutorial sections to better understand the concepts.
+                    Focus on the areas where you had incorrect answers.
+                `;
+            }
+
+            resultsDiv.style.display = 'block';
+
+            // Scroll to results
+            resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function resetFinalQuiz() {
+            // Reset all selections and feedback
+            const options = document.querySelectorAll('.option, .tf-option');
+            options.forEach(option => {
+                option.classList.remove('selected', 'correct', 'incorrect');
+            });
+
+            // Clear short answer
+            const shortAnswer = document.querySelector('.short-answer-input');
+            if (shortAnswer) {
+                shortAnswer.value = '';
+            }
+
+            // Hide results
+            document.getElementById('quizResults').style.display = 'none';
+
+            // Reset progress
+            updateQuizProgress();
+        }
+
+        // Add click handlers for quiz options
+        document.addEventListener('DOMContentLoaded', function() {
+            const options = document.querySelectorAll('.option, .tf-option');
+            options.forEach(option => {
+                option.addEventListener('click', function() {
+                    selectQuizOption(this);
+                });
+            });
+
+            // Audio Player Functionality
+            const audioPlayerBtn = document.getElementById('audioPlayerBtn');
+            const audioPlayerContainer = document.getElementById('audioPlayerContainer');
+            const closeAudioBtn = document.getElementById('closeAudioBtn');
+            const pageAudio = document.getElementById('pageAudio');
+            const audioPlayPause = document.getElementById('audioPlayPause');
+            const audioProgress = document.getElementById('audioProgress');
+            const audioProgressBar = document.getElementById('audioProgressBar');
+            const currentTime = document.getElementById('currentTime');
+            const totalTime = document.getElementById('totalTime');
+
+
+            // Open audio player
+            audioPlayerBtn.addEventListener('click', function() {
+                audioPlayerContainer.classList.add('active');
+            });
+
+            // Close audio player
+            closeAudioBtn.addEventListener('click', function() {
+                audioPlayerContainer.classList.remove('active');
+                pageAudio.pause();
+                updatePlayPauseIcon();
+            });
+
+            // Play/Pause functionality
+            audioPlayPause.addEventListener('click', function() {
+                if (pageAudio.paused) {
+                    pageAudio.play();
+                } else {
+                    pageAudio.pause();
+                }
+                updatePlayPauseIcon();
+            });
+
+            // Update play/pause icon
+            function updatePlayPauseIcon() {
+                const icon = audioPlayPause.querySelector('i');
+                if (pageAudio.paused) {
+                    icon.className = 'fas fa-play';
+                } else {
+                    icon.className = 'fas fa-pause';
+                }
+            }
+
+            // Format time
+            function formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+
+            // Update progress bar
+            pageAudio.addEventListener('timeupdate', function() {
+                const progress = (pageAudio.currentTime / pageAudio.duration) * 100;
+                audioProgressBar.style.width = progress + '%';
+                currentTime.textContent = formatTime(pageAudio.currentTime);
+            });
+
+            // Set total time when metadata loads
+            pageAudio.addEventListener('loadedmetadata', function() {
+                totalTime.textContent = formatTime(pageAudio.duration);
+            });
+
+            // Click on progress bar to seek
+            audioProgress.addEventListener('click', function(e) {
+                const rect = audioProgress.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const width = rect.width;
+                const clickTime = (clickX / width) * pageAudio.duration;
+                pageAudio.currentTime = clickTime;
+            });
+
+            // Auto-update play/pause icon when audio ends
+            pageAudio.addEventListener('ended', function() {
+                updatePlayPauseIcon();
+            });
+        });
+    </script>
+</body>
+</html>

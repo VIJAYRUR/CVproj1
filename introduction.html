@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Introduction - Accessible Food Label Reading with Computer Vision</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #1a365d;
+            --secondary-color: #2d3748;
+            --accent-color: #4a5568;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --bg-primary: #f7fafc;
+            --bg-secondary: #ffffff;
+            --border-color: #e2e8f0;
+            --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --shadow-medium: 0 8px 25px rgba(0, 0, 0, 0.12);
+            --sidebar-width: 280px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background-color: var(--bg-primary);
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: var(--sidebar-width);
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            box-shadow: var(--shadow-soft);
+            transform: translateX(0);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .sidebar-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .sidebar-nav {
+            padding: 1rem 0;
+        }
+
+        .nav-item {
+            margin: 0.25rem 0;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            color: var(--text-dark);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background-color: var(--bg-primary);
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+        }
+
+        .nav-link.active {
+            background-color: var(--bg-primary);
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .nav-link i {
+            margin-right: 0.75rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            transition: margin-left 0.3s ease;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        .top-navbar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 1.5rem;
+            box-shadow: var(--shadow-soft);
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+
+        .sidebar-toggle {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+
+        .sidebar-toggle:hover {
+            background-color: var(--bg-primary);
+        }
+
+        .content-area {
+            padding: 2rem;
+        }
+
+        .page-header {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .page-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .content-section {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-color);
+        }
+
+        /* Hero Section Styles */
+        .hero-intro {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            border-radius: 16px;
+            padding: 3rem;
+            margin-bottom: 3rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-intro::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="white" opacity="0.1"/></svg>') repeat;
+            animation: float 20s linear infinite;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 1rem;
+        }
+
+        /* Problem Cards */
+        .problem-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .problem-card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .problem-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+        }
+
+        .problem-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .problem-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .problem-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .problem-description {
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+
+        /* Timeline Styles */
+        .timeline-section {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 3rem;
+            margin: 3rem 0;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-color);
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 2rem;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(to bottom, var(--primary-color), var(--accent-color));
+            border-radius: 2px;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 2.5rem;
+            padding-left: 2rem;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -2.5rem;
+            top: 0.5rem;
+            width: 12px;
+            height: 12px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            border: 3px solid var(--bg-secondary);
+            box-shadow: 0 0 0 3px var(--primary-color);
+        }
+
+        .timeline-year {
+            display: inline-block;
+            background: var(--primary-color);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .timeline-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .timeline-description {
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+
+        /* Next Steps Cards */
+        .next-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .step-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .step-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .step-emoji {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .step-title {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .step-description {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        /* Citation Links */
+        .citation-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+            border-bottom: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .citation-link:hover {
+            color: var(--secondary-color);
+            border-bottom-color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        /* Reading Time Indicator */
+        .reading-time {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-light);
+            font-size: 0.9rem;
+            background: var(--bg-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .reading-time i {
+            color: var(--primary-color);
+        }
+
+        /* Audio Player */
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .audio-player-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .audio-player-btn:hover {
+            background: var(--secondary-color);
+            transform: scale(1.05);
+        }
+
+        .audio-player-container {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 25px;
+            padding: 1rem 1.5rem;
+            box-shadow: var(--shadow-medium);
+            z-index: 1000;
+            min-width: 300px;
+        }
+
+        .audio-player-container.active {
+            display: block;
+        }
+
+        .audio-player-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .audio-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .close-audio-btn {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-audio-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .audio-controls-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .audio-play-pause {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .audio-play-pause:hover {
+            background: var(--secondary-color);
+        }
+
+        .audio-progress-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .audio-time {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            min-width: 35px;
+        }
+
+        .audio-progress {
+            flex: 1;
+            height: 4px;
+            background: var(--border-color);
+            border-radius: 2px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .audio-progress-bar {
+            height: 100%;
+            background: var(--primary-color);
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+
+        /* Animations */
+        @keyframes float {
+            0% { transform: translateX(-100px) translateY(-100px); }
+            100% { transform: translateX(100px) translateY(100px); }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .hero-intro {
+                padding: 2rem;
+            }
+
+            .timeline {
+                padding-left: 1.5rem;
+            }
+
+            .timeline-item {
+                padding-left: 1.5rem;
+            }
+
+            .timeline-item::before {
+                left: -2rem;
+            }
+        }
+
+        /* Navigation Buttons */
+        .page-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 3rem;
+            padding: 1.5rem 0;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .nav-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .nav-button:hover {
+            background: var(--secondary-color);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .nav-button.disabled {
+            background: var(--text-light);
+            color: #a0aec0;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .nav-button.disabled:hover {
+            background: var(--text-light);
+            color: #a0aec0;
+            transform: none;
+            box-shadow: var(--shadow-soft);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .content-area {
+                padding: 1rem;
+            }
+            
+            .page-header {
+                padding: 1.5rem;
+            }
+            
+            .page-title {
+                font-size: 2rem;
+            }
+            
+            .page-navigation {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2 class="sidebar-title">Accessible Food Label Reading</h2>
+        </div>
+        <div class="sidebar-nav">
+            <div class="nav-item">
+                <a href="introduction.html" class="nav-link active">
+                    <i class="fas fa-home"></i>
+                    Introduction
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="techniques.html" class="nav-link">
+                    <i class="fas fa-cogs"></i>
+                    Techniques
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="interaction.html" class="nav-link">
+                    <i class="fas fa-hand-pointer"></i>
+                    Interaction
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="datasets.html" class="nav-link">
+                    <i class="fas fa-database"></i>
+                    Datasets
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="challenges.html" class="nav-link">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Challenges
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="conclusion.html" class="nav-link">
+                    <i class="fas fa-flag-checkered"></i>
+                    Conclusion
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="conclusion.html#quiz" class="nav-link">
+                    <i class="fas fa-graduation-cap"></i>
+                    Final Quiz
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="bibliography.html" class="nav-link">
+                    <i class="fas fa-book"></i>
+                    Bibliography
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Audio Player Container -->
+    <div class="audio-player-container" id="audioPlayerContainer">
+        <div class="audio-player-header">
+            <span class="audio-title">Introduction Audio</span>
+            <button class="close-audio-btn" id="closeAudioBtn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="audio-controls-container">
+            <button class="audio-play-pause" id="audioPlayPause">
+                <i class="fas fa-play"></i>
+            </button>
+            <div class="audio-progress-container">
+                <span class="audio-time" id="currentTime">0:00</span>
+                <div class="audio-progress" id="audioProgress">
+                    <div class="audio-progress-bar" id="audioProgressBar"></div>
+                </div>
+                <span class="audio-time" id="totalTime">0:00</span>
+            </div>
+        </div>
+        <audio id="pageAudio" preload="metadata">
+            <source src="audio/Introduction.m4a" type="audio/mp4">
+            <source src="audio/Introduction.mp3" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <!-- Top Navigation Bar -->
+        <nav class="top-navbar">
+            <div class="d-flex justify-content-between align-items-center">
+                <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar navigation">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="audio-controls">
+                    <div class="reading-time">
+                        <i class="fas fa-clock"></i>
+                        <span>5 min read</span>
+                    </div>
+                    <button class="audio-player-btn" id="audioPlayerBtn" aria-label="Play page audio">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Content Area -->
+        <div class="content-area">
+            <!-- Hero Introduction -->
+            <div class="hero-intro fade-in">
+                <div class="hero-content">
+                    <h1 class="page-title" style="color: white; margin-bottom: 1rem;">Introduction</h1>
+                    <p class="hero-subtitle">Empowering Independence Through Computer Vision</p>
+                    <p style="font-size: 1.1rem; opacity: 0.9; max-width: 600px; margin: 0 auto;">
+                        Discover how modern AI and computer vision can transform food label accessibility for blind and visually impaired individuals.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Background and Motivation -->
+            <div class="content-section fade-in">
+                <h2 style="font-family: 'Poppins', sans-serif; color: var(--primary-color); margin-bottom: 1.5rem;">
+                    <i class="fas fa-lightbulb" style="margin-right: 0.5rem; color: var(--accent-color);"></i>
+                    Background and Motivation
+                </h2>
+                <p style="font-size: 1.1rem; line-height: 1.7; color: var(--text-dark); margin-bottom: 1.5rem;">
+                    Food labels provide critical details such as ingredients, nutritional facts, allergens, and expiration dates. For people who are blind or visually impaired, this information is often inaccessible because of small font sizes, cluttered layouts, curved surfaces, and poor lighting conditions.
+                </p>
+                <p style="font-size: 1.1rem; line-height: 1.7; color: var(--text-dark);">
+                    <strong>Missing this information can directly impact dietary choices and health outcomes.</strong> The emergence of computer vision and artificial intelligence (AI) has created new opportunities to make food label information accessible through innovative technological solutions.
+                </p>
+            </div>
+
+            <!-- The Core Problem -->
+            <div class="content-section fade-in">
+                <h2 style="font-family: 'Poppins', sans-serif; color: var(--primary-color); margin-bottom: 2rem; text-align: center;">
+                    <i class="fas fa-exclamation-circle" style="margin-right: 0.5rem; color: var(--accent-color);"></i>
+                    The Core Problem
+                </h2>
+                <p style="text-align: center; color: var(--text-light); margin-bottom: 2rem; font-size: 1.1rem;">
+                    Accessible food label reading has three main challenges:
+                </p>
+
+                <div class="problem-grid">
+                    <div class="problem-card">
+                        <div class="problem-icon">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <h3 class="problem-title">Extracting Text</h3>
+                        <p class="problem-description">
+                            Reading text on packages with OCR. Handling poor print quality, noise, and odd layouts.
+                        </p>
+                    </div>
+
+                    <div class="problem-card">
+                        <div class="problem-icon">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <h3 class="problem-title">Understanding Content</h3>
+                        <p class="problem-description">
+                            Finding what really matters (allergens, expiry date) instead of raw text.
+                        </p>
+                    </div>
+
+                    <div class="problem-card">
+                        <div class="problem-icon">
+                            <i class="fas fa-volume-up"></i>
+                        </div>
+                        <h3 class="problem-title">Delivering Accessibly</h3>
+                        <p class="problem-description">
+                            Using voice assistants and multimodal feedback so blind users can interact naturally.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Research Timeline -->
+            <div class="timeline-section fade-in">
+                <h2 style="font-family: 'Poppins', sans-serif; color: var(--primary-color); margin-bottom: 2rem; text-align: center;">
+                    <i class="fas fa-clock" style="margin-right: 0.5rem; color: var(--accent-color);"></i>
+                    What Research Tells Us
+                </h2>
+
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <span class="timeline-year">2021</span>
+                        <h3 class="timeline-title">Allergen Detection</h3>
+                        <p class="timeline-description">
+                            <a href="bibliography.html#ref5" class="citation-link">Johan & Rizal</a> built a system that identifies allergens in food labels using OCR + keyword matching <a href="bibliography.html#ref5" class="citation-link">[5]</a>.
+                        </p>
+                    </div>
+
+                    <div class="timeline-item">
+                        <span class="timeline-year">2023</span>
+                        <h3 class="timeline-title">App Evaluations</h3>
+                        <p class="timeline-description">
+                            <a href="bibliography.html#ref4" class="citation-link">Bhagat et al.</a> studied apps like Seeing AI and Lookout. Found they are helpful but often slow or inaccurate <a href="bibliography.html#ref4" class="citation-link">[4]</a>.
+                        </p>
+                    </div>
+
+                    <div class="timeline-item">
+                        <span class="timeline-year">2024</span>
+                        <h3 class="timeline-title">Smarter OCR on Labels</h3>
+                        <p class="timeline-description">
+                            <strong><a href="bibliography.html#ref1" class="citation-link">Saputra et al.</a></strong> used Tesseract with bounding boxes for nutrition labels <a href="bibliography.html#ref1" class="citation-link">[1]</a>.<br>
+                            <strong><a href="bibliography.html#ref2" class="citation-link">Grumeza et al.</a></strong> combined EasyOCR with LLMs for expiry date recognition <a href="bibliography.html#ref2" class="citation-link">[2]</a>.<br>
+                            <strong><a href="bibliography.html#ref3" class="citation-link">Olumide</a></strong> surveyed deep learning OCR (CNNs, YOLO, RNNs) for real-world environments <a href="bibliography.html#ref3" class="citation-link">[3]</a>.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Where This Tutorial Goes Next -->
+            <div class="content-section fade-in">
+                <h2 style="font-family: 'Poppins', sans-serif; color: var(--primary-color); margin-bottom: 2rem; text-align: center;">
+                    <i class="fas fa-map-marked-alt" style="margin-right: 0.5rem; color: var(--accent-color);"></i>
+                    Where This Tutorial Goes Next
+                </h2>
+                <p style="text-align: center; color: var(--text-light); margin-bottom: 2rem; font-size: 1.1rem;">
+                    In this tutorial you will learn:
+                </p>
+
+                <div class="next-steps">
+                    <div class="step-card" onclick="window.location.href='techniques.html'">
+                        <span class="step-emoji">🔍</span>
+                        <h3 class="step-title">Techniques</h3>
+                        <p class="step-description">OCR approaches, preprocessing, and deep learning methods.</p>
+                    </div>
+
+                    <div class="step-card" onclick="window.location.href='interaction.html'">
+                        <span class="step-emoji">🎙️</span>
+                        <h3 class="step-title">Interaction</h3>
+                        <p class="step-description">Voice access, natural queries, and multimodal design.</p>
+                    </div>
+
+                    <div class="step-card" onclick="window.location.href='datasets.html'">
+                        <span class="step-emoji">📊</span>
+                        <h3 class="step-title">Datasets</h3>
+                        <p class="step-description">Common datasets and evaluation metrics used by researchers.</p>
+                    </div>
+
+                    <div class="step-card" onclick="window.location.href='challenges.html'">
+                        <span class="step-emoji">⚠️</span>
+                        <h3 class="step-title">Challenges</h3>
+                        <p class="step-description">Curved packaging, glare, multi-language labels.</p>
+                    </div>
+
+                 
+                </div>
+            </div>
+
+            <!-- Page Navigation -->
+            <div class="page-navigation">
+                <a href="index.html" class="nav-button">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Home
+                </a>
+                <a href="techniques.html" class="nav-button">
+                    Next: Techniques
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+            function toggleSidebar() {
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.toggle('show');
+                    sidebarOverlay.classList.toggle('show');
+                } else {
+                    sidebar.classList.toggle('collapsed');
+                    mainContent.classList.toggle('expanded');
+                }
+            }
+
+            function closeSidebar() {
+                sidebar.classList.remove('show');
+                sidebarOverlay.classList.remove('show');
+            }
+
+            sidebarToggle.addEventListener('click', toggleSidebar);
+            sidebarOverlay.addEventListener('click', closeSidebar);
+
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768) {
+                    sidebar.classList.remove('show');
+                    sidebarOverlay.classList.remove('show');
+                }
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeSidebar();
+                }
+            });
+
+            // Smooth scroll animations
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver(function(entries) {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, observerOptions);
+
+            // Observe all fade-in elements
+            document.querySelectorAll('.fade-in').forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(30px)';
+                el.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+                observer.observe(el);
+            });
+
+            // Add hover effects to step cards
+            document.querySelectorAll('.step-card').forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-5px) scale(1.02)';
+                });
+
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+
+            // Audio Player Functionality
+            const audioPlayerBtn = document.getElementById('audioPlayerBtn');
+            const audioPlayerContainer = document.getElementById('audioPlayerContainer');
+            const closeAudioBtn = document.getElementById('closeAudioBtn');
+            const pageAudio = document.getElementById('pageAudio');
+            const audioPlayPause = document.getElementById('audioPlayPause');
+            const audioProgress = document.getElementById('audioProgress');
+            const audioProgressBar = document.getElementById('audioProgressBar');
+            const currentTime = document.getElementById('currentTime');
+            const totalTime = document.getElementById('totalTime');
+
+
+            // Open audio player and start playing
+            audioPlayerBtn.addEventListener('click', function() {
+                audioPlayerContainer.classList.add('active');
+                pageAudio.play();
+                updatePlayPauseIcon();
+            });
+
+            // Close audio player
+            closeAudioBtn.addEventListener('click', function() {
+                audioPlayerContainer.classList.remove('active');
+                pageAudio.pause();
+                updatePlayPauseIcon();
+            });
+
+            // Play/Pause functionality
+            audioPlayPause.addEventListener('click', function() {
+                if (pageAudio.paused) {
+                    pageAudio.play();
+                } else {
+                    pageAudio.pause();
+                }
+                updatePlayPauseIcon();
+            });
+
+            // Update play/pause icon
+            function updatePlayPauseIcon() {
+                const icon = audioPlayPause.querySelector('i');
+                if (pageAudio.paused) {
+                    icon.className = 'fas fa-play';
+                } else {
+                    icon.className = 'fas fa-pause';
+                }
+            }
+
+            // Format time
+            function formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+
+            // Update progress bar
+            pageAudio.addEventListener('timeupdate', function() {
+                const progress = (pageAudio.currentTime / pageAudio.duration) * 100;
+                audioProgressBar.style.width = progress + '%';
+                currentTime.textContent = formatTime(pageAudio.currentTime);
+            });
+
+            // Set total time when metadata loads
+            pageAudio.addEventListener('loadedmetadata', function() {
+                totalTime.textContent = formatTime(pageAudio.duration);
+            });
+
+            // Click on progress bar to seek
+            audioProgress.addEventListener('click', function(e) {
+                const rect = audioProgress.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const width = rect.width;
+                const clickTime = (clickX / width) * pageAudio.duration;
+                pageAudio.currentTime = clickTime;
+            });
+
+            // Auto-update play/pause icon when audio ends
+            pageAudio.addEventListener('ended', function() {
+                updatePlayPauseIcon();
+            });
+        });
+    </script>
+</body>
+</html>

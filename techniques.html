@@ -1,0 +1,2217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Techniques - Accessible Food Label Reading with Computer Vision</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #1a365d;
+            --secondary-color: #2d3748;
+            --accent-color: #4a5568;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --bg-primary: #f7fafc;
+            --bg-secondary: #ffffff;
+            --border-color: #e2e8f0;
+            --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --shadow-medium: 0 8px 25px rgba(0, 0, 0, 0.12);
+            --sidebar-width: 280px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background-color: var(--bg-primary);
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: var(--sidebar-width);
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            box-shadow: var(--shadow-soft);
+            transform: translateX(0);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .sidebar-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .sidebar-nav {
+            padding: 1rem 0;
+        }
+
+        .nav-item {
+            margin: 0.25rem 0;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            color: var(--text-dark);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background-color: var(--bg-primary);
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+        }
+
+        .nav-link.active {
+            background-color: var(--bg-primary);
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .nav-link i {
+            margin-right: 0.75rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            transition: margin-left 0.3s ease;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        .top-navbar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 1.5rem;
+            box-shadow: var(--shadow-soft);
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+
+        .sidebar-toggle {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+
+        .sidebar-toggle:hover {
+            background-color: var(--bg-primary);
+        }
+
+        .content-area {
+            padding: 2rem;
+        }
+
+        .page-header {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .page-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .content-section {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-color);
+        }
+
+        /* Pipeline Presentation Styles */
+        .pipeline-presentation {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: var(--shadow-medium);
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pipeline-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .pipeline-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .pipeline-flow {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .flow-diagram {
+            font-family: 'Courier New', monospace;
+            font-size: 1.2rem;
+            color: var(--text-dark);
+            line-height: 2;
+        }
+
+        .pipeline-container {
+            position: relative;
+            min-height: 700px;
+            max-height: 80vh;
+            overflow: hidden;
+        }
+
+        .stage-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: var(--shadow-medium);
+            border: 1px solid var(--border-color);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(50px);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 1;
+        }
+
+        .stage-slide.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(0);
+            z-index: 2;
+        }
+
+        .stage-slide.prev {
+            transform: translateX(-50px);
+            opacity: 0;
+            visibility: hidden;
+            z-index: 0;
+        }
+
+        .stage-slide::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+        }
+
+        .stage-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stage-number {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .stage-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .stage-goal {
+            background: var(--bg-primary);
+            border-left: 4px solid var(--primary-color);
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .stage-goal strong {
+            color: var(--primary-color);
+        }
+
+        /* Problem/Technique Cards */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .info-card {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .info-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .info-card h4 {
+            font-family: 'Poppins', sans-serif;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-card h4 i {
+            color: var(--accent-color);
+        }
+
+        /* Mathematical Equations */
+        .equation-box {
+            background: #f8f9fa;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            position: relative;
+        }
+
+        .equation-box::before {
+            content: '📐';
+            position: absolute;
+            top: -10px;
+            left: 15px;
+            background: var(--bg-secondary);
+            padding: 0 0.5rem;
+            font-size: 1.2rem;
+        }
+
+        .equation {
+            font-weight: 600;
+            color: var(--primary-color);
+            line-height: 1.6;
+        }
+
+        .equation-label {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            margin-top: 0.5rem;
+            font-style: italic;
+        }
+
+        /* Research Example Cards */
+        .research-example {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-left: 4px solid var(--primary-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .research-example h4 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .research-example h4 i {
+            color: var(--accent-color);
+        }
+
+        /* Citation Links */
+        .citation-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+            border-bottom: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .citation-link:hover {
+            color: var(--secondary-color);
+            border-bottom-color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        /* OCR Methods Grid */
+        .ocr-methods {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .method-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-soft);
+            transition: all 0.3s ease;
+        }
+
+        .method-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .method-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .method-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .method-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .pros-cons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .pros, .cons {
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .pros {
+            background: #e8f5e8;
+            border-left: 3px solid #4caf50;
+        }
+
+        .cons {
+            background: #ffeaa7;
+            border-left: 3px solid #f39c12;
+        }
+
+        .pros h5, .cons h5 {
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .pros h5 {
+            color: #2e7d32;
+        }
+
+        .cons h5 {
+            color: #e65100;
+        }
+
+        /* Specialized Tasks */
+        .task-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .task-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-soft);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .task-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            border-radius: 12px 12px 0 0;
+        }
+
+        .task-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .task-emoji {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .task-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        /* Navigation Controls */
+        .slide-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 2rem;
+            padding: 1.5rem 0;
+        }
+
+        .slide-nav-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .slide-nav-btn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .slide-nav-btn:disabled {
+            background: var(--text-light);
+            cursor: not-allowed;
+            transform: none;
+            opacity: 0.5;
+        }
+
+        .slide-nav-btn:active {
+            transform: scale(0.95);
+        }
+
+        .slide-indicator {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .indicator-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--border-color);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .indicator-dot.active {
+            background: var(--primary-color);
+            transform: scale(1.3);
+            box-shadow: 0 0 0 3px rgba(26, 54, 93, 0.2);
+        }
+
+        .indicator-dot:hover {
+            background: var(--accent-color);
+            transform: scale(1.1);
+        }
+
+        .slide-counter {
+            color: var(--text-light);
+            font-weight: 600;
+            margin: 0 1rem;
+        }
+
+        /* Reading Time */
+        .reading-time {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-light);
+            font-size: 0.9rem;
+            background: var(--bg-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .reading-time i {
+            color: var(--primary-color);
+        }
+
+        /* Audio Player */
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .audio-player-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .audio-player-btn:hover {
+            background: var(--secondary-color);
+            transform: scale(1.05);
+        }
+
+        .audio-player-container {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 25px;
+            padding: 1rem 1.5rem;
+            box-shadow: var(--shadow-medium);
+            z-index: 1000;
+            min-width: 300px;
+        }
+
+        .audio-player-container.active {
+            display: block;
+        }
+
+        .audio-player-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .audio-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .close-audio-btn {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-audio-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .audio-controls-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .audio-play-pause {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .audio-play-pause:hover {
+            background: var(--secondary-color);
+        }
+
+        .audio-progress-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .audio-time {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            min-width: 35px;
+        }
+
+        .audio-progress {
+            flex: 1;
+            height: 4px;
+            background: var(--border-color);
+            border-radius: 2px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .audio-progress-bar {
+            height: 100%;
+            background: var(--primary-color);
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+
+        /* Quiz Styles */
+        .quiz-content-slide {
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 1rem;
+        }
+
+        .quiz-intro-slide {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Custom scrollbar for quiz content */
+        .quiz-content-slide::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .quiz-content-slide::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+            border-radius: 4px;
+        }
+
+        .quiz-content-slide::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        .quiz-content-slide::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary-color);
+        }
+
+        /* Scroll indicator */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 1rem;
+            right: 1rem;
+            background: var(--primary-color);
+            color: white;
+            padding: 0.5rem;
+            border-radius: 50%;
+            font-size: 0.8rem;
+            opacity: 0.7;
+            animation: bounce 2s infinite;
+            pointer-events: none;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
+        }
+
+        .scroll-indicator.hidden {
+            display: none;
+        }
+
+        .quiz-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .quiz-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-light);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .start-quiz-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 1rem 2.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-soft);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .start-quiz-btn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .quiz-container {
+            background: var(--bg-primary);
+            border-radius: 16px;
+            padding: 2.5rem;
+            margin-top: 2rem;
+            color: var(--text-dark);
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border-color);
+        }
+
+        .question-card {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .question-card:hover {
+            box-shadow: var(--shadow-soft);
+        }
+
+        /* Compact quiz layout */
+        .quiz-content-slide .question-card {
+            margin-bottom: 1rem;
+        }
+
+        .quiz-content-slide .stage-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .quiz-content-slide .quiz-actions {
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .question-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .question-number {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .question-type {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .question-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .options-container {
+            display: grid;
+            gap: 0.8rem;
+        }
+
+        .option {
+            background: var(--bg-primary);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .option:hover {
+            border-color: var(--primary-color);
+            background: var(--bg-secondary);
+        }
+
+        .option.selected {
+            border-color: var(--primary-color);
+            background: var(--bg-secondary);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .option.correct {
+            border-color: #4caf50;
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .option.incorrect {
+            border-color: #f44336;
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .option-letter {
+            width: 30px;
+            height: 30px;
+            background: var(--text-light);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .option.correct .option-letter {
+            background: #4caf50;
+        }
+
+        .option.incorrect .option-letter {
+            background: #f44336;
+        }
+
+        .option.selected .option-letter {
+            background: var(--primary-color);
+        }
+
+        .true-false-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .tf-option {
+            background: var(--bg-primary);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .tf-option:hover {
+            border-color: var(--primary-color);
+            background: var(--bg-secondary);
+        }
+
+        .tf-option.selected {
+            border-color: var(--primary-color);
+            background: var(--bg-secondary);
+            color: var(--primary-color);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .tf-option.correct {
+            border-color: #4caf50;
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .tf-option.incorrect {
+            border-color: #f44336;
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .quiz-actions {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .quiz-button {
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .check-answers-btn {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .check-answers-btn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .reset-btn {
+            background: var(--text-light);
+            color: white;
+        }
+
+        .reset-btn:hover {
+            background: var(--accent-color);
+            transform: translateY(-2px);
+        }
+
+        .quiz-results {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-top: 2rem;
+            text-align: center;
+            display: none;
+        }
+
+        .score-display {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .score-message {
+            font-size: 1.1rem;
+            color: var(--text-dark);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .stage-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .info-grid, .ocr-methods, .task-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .pros-cons {
+                grid-template-columns: 1fr;
+            }
+
+            .equation-box {
+                font-size: 1rem;
+                padding: 1rem;
+            }
+
+            .quiz-section {
+                padding: 2rem;
+            }
+
+            .quiz-title {
+                font-size: 1.8rem;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .true-false-container {
+                grid-template-columns: 1fr;
+            }
+
+            .quiz-actions {
+                flex-direction: column;
+            }
+        }
+
+        /* Navigation Buttons */
+        .page-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 3rem;
+            padding: 1.5rem 0;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .nav-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .nav-button:hover {
+            background: var(--secondary-color);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .content-area {
+                padding: 1rem;
+            }
+            
+            .page-header {
+                padding: 1.5rem;
+            }
+            
+            .page-title {
+                font-size: 2rem;
+            }
+            
+            .page-navigation {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Flip Card Animation */
+        .flip-card {
+            background-color: transparent;
+            perspective: 1000px;
+            min-height: 500px;
+        }
+
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            min-height: 500px;
+            text-align: left;
+            transition: transform 0.8s;
+            transform-style: preserve-3d;
+        }
+
+        .flip-card:hover .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            min-height: 500px;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            padding: 2rem;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .flip-card-front {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-soft);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .flip-card-back {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-soft);
+            transform: rotateY(180deg);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .flip-card-back img {
+            max-width: 100%;
+            max-height: 80%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .flip-hint {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: var(--accent-color);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        /* Override method-card styles for flip cards */
+        .method-card.flip-card {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            padding: 0;
+        }
+
+        .method-card.flip-card:hover {
+            transform: none;
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2 class="sidebar-title">Accessible Food Label Reading</h2>
+        </div>
+        <div class="sidebar-nav">
+            <div class="nav-item">
+                <a href="introduction.html" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    Introduction
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="techniques.html" class="nav-link active">
+                    <i class="fas fa-cogs"></i>
+                    Techniques
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="interaction.html" class="nav-link">
+                    <i class="fas fa-hand-pointer"></i>
+                    Interaction
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="datasets.html" class="nav-link">
+                    <i class="fas fa-database"></i>
+                    Datasets
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="challenges.html" class="nav-link">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Challenges
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="conclusion.html" class="nav-link">
+                    <i class="fas fa-flag-checkered"></i>
+                    Conclusion
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="conclusion.html#quiz" class="nav-link">
+                    <i class="fas fa-graduation-cap"></i>
+                    Final Quiz
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="bibliography.html" class="nav-link">
+                    <i class="fas fa-book"></i>
+                    Bibliography
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Audio Player Container -->
+    <div class="audio-player-container" id="audioPlayerContainer">
+        <div class="audio-player-header">
+            <span class="audio-title">Techniques Audio</span>
+            <button class="close-audio-btn" id="closeAudioBtn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="audio-controls-container">
+            <button class="audio-play-pause" id="audioPlayPause">
+                <i class="fas fa-play"></i>
+            </button>
+            <div class="audio-progress-container">
+                <span class="audio-time" id="currentTime">0:00</span>
+                <div class="audio-progress" id="audioProgress">
+                    <div class="audio-progress-bar" id="audioProgressBar"></div>
+                </div>
+                <span class="audio-time" id="totalTime">0:00</span>
+            </div>
+        </div>
+        <audio id="pageAudio" preload="metadata">
+            <source src="audio/Techniques.m4a" type="audio/mp4">
+            <source src="audio/Techniques.mp3" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <!-- Top Navigation Bar -->
+        <nav class="top-navbar">
+            <div class="d-flex justify-content-between align-items-center">
+                <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar navigation">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="audio-controls">
+                    <div class="reading-time">
+                        <i class="fas fa-clock"></i>
+                        <span>8 min read</span>
+                    </div>
+                    <button class="audio-player-btn" id="audioPlayerBtn" aria-label="Play page audio">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Content Area -->
+        <div class="content-area">
+            <div class="page-header">
+                <h1 class="page-title">Computer Vision Techniques</h1>
+                <p style="text-align: center; color: var(--text-light); margin-top: 1rem; font-size: 1.1rem;">
+                    A comprehensive 3-stage pipeline for accessible food label reading
+                </p>
+            </div>
+
+            <!-- Pipeline Presentation -->
+            <div class="pipeline-presentation">
+                <div class="pipeline-header">
+                    <h2 class="pipeline-title">Complete Pipeline Flow</h2>
+                    <div class="pipeline-flow">
+                        <div class="flow-diagram">
+                            Image Capture → Preprocessing → OCR → Nutrition | Expiry | Allergen
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pipeline-container">
+                    <!-- Stage 1: Image Acquisition & Preprocessing -->
+                    <div class="stage-slide active" id="stage1">
+                <div class="stage-header">
+                    <div class="stage-number">1</div>
+                    <h2 class="stage-title">Image Acquisition & Preprocessing</h2>
+                </div>
+
+                <div class="stage-goal">
+                    <strong>Goal:</strong> Capture clear images of labels that work for OCR.
+                </div>
+
+                <div class="info-grid">
+                    <div class="info-card">
+                        <h4><i class="fas fa-exclamation-triangle"></i> Common Problems</h4>
+                        <ul>
+                            <li>Small fonts, poor contrast, glare on glossy packaging</li>
+                            <li>Curved or tilted labels (e.g., bottles, cans)</li>
+                            <li>Motion blur and poor lighting conditions</li>
+                        </ul>
+                    </div>
+
+                    <div class="info-card">
+                        <h4><i class="fas fa-tools"></i> Techniques Used</h4>
+                        <ul>
+                            <li>Image enhancement (histogram equalization, denoising)</li>
+                            <li>Perspective correction using homography matrices</li>
+                            <li>Bounding box detection for text regions</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="equation-box">
+                    <div class="equation">
+                        Perspective Correction:<br>
+                        [x', y', 1]<sup>T</sup> = H[x, y, 1]<sup>T</sup>
+                    </div>
+                    <div class="equation-label">
+                        Where H is the homography matrix transforming I(x,y) → I'(x',y')
+                    </div>
+                </div>
+
+                <div class="research-example">
+                    <h4><i class="fas fa-flask"></i> Research Example</h4>
+                    <div class="research-image" style="position: relative; display: inline-block;">
+                        <img src="images/bounding box detection before OCR.png" alt="Bounding box detection before OCR" style="width: 100%; max-width: 600px; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                        <div style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); color: white; padding: 6px 12px; border-radius: 15px; font-size: 0.7rem; font-weight: 500; z-index: 10; white-space: nowrap;">Credits: Gemini 2.5 Flash</div>
+                    </div>
+                </div>
+            </div>
+
+                    <!-- Stage 2: OCR Methods -->
+                    <div class="stage-slide" id="stage2">
+                <div class="stage-header">
+                    <div class="stage-number">2</div>
+                    <h2 class="stage-title">OCR Methods for Food Labels</h2>
+                </div>
+
+                <div class="stage-goal">
+                    <strong>Goal:</strong> Convert label text into machine-readable content.
+                </div>
+
+                <div class="ocr-methods">
+                    <div class="method-card flip-card">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front">
+                                <div class="method-header">
+                                    <div class="method-icon">
+                                        <i class="fas fa-font"></i>
+                                    </div>
+                                    <h3 class="method-title">Traditional OCR</h3>
+                                </div>
+                                <p><strong>Tools:</strong> Tesseract</p>
+
+                                <div class="pros-cons">
+                                    <div class="pros">
+                                        <h5>✅ Strengths</h5>
+                                        <ul>
+                                            <li>Fast processing</li>
+                                            <li>Lightweight</li>
+                                            <li>Good for clean text</li>
+                                        </ul>
+                                    </div>
+                                    <div class="cons">
+                                        <h5>⚠️ Weaknesses</h5>
+                                        <ul>
+                                            <li>Fails with irregular fonts</li>
+                                            <li>Poor on noisy layouts</li>
+                                            <li>Limited curved text support</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div class="flip-hint">Hover to see Traditional OCR</div>
+                            </div>
+                            <div class="flip-card-back">
+                                <img src="images/TRADITIONAL_OCR.png" alt="Traditional OCR Process Diagram" />
+                                <div style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); color: white; padding: 6px 12px; border-radius: 15px; font-size: 0.7rem; font-weight: 500; z-index: 10; white-space: nowrap;">Credits: Gemini 2.5 Flash</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="method-card flip-card">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front">
+                                <div class="method-header">
+                                    <div class="method-icon">
+                                        <i class="fas fa-brain"></i>
+                                    </div>
+                                    <h3 class="method-title">Deep Learning OCR</h3>
+                                </div>
+
+                                <p><strong>CRNN (Convolutional Recurrent Neural Network):</strong> Extracts image features with CNN, sequences with RNN.</p>
+
+                                <div class="equation-box">
+                                    <div class="equation">
+                                        y<sub>t</sub> = Softmax(Wh<sub>t</sub> + b)
+                                    </div>
+                                    <div class="equation-label">
+                                        Where h<sub>t</sub> is RNN hidden state at time t
+                                    </div>
+                                </div>
+
+                                <p><strong>Other Methods:</strong></p>
+                                <ul>
+                                    <li><strong>YOLO + OCR:</strong> Detects text regions quickly before recognition</li>
+                                    <li><strong>Transformer-based OCR:</strong> Uses self-attention for multi-language, curved text</li>
+                                </ul>
+
+                                <div class="flip-hint">Hover to see CRNN</div>
+                            </div>
+                            <div class="flip-card-back">
+                                <img src="images/CRNN.png" alt="CRNN Architecture Diagram" />
+                                <div style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); color: white; padding: 6px 12px; border-radius: 15px; font-size: 0.7rem; font-weight: 500; z-index: 10; white-space: nowrap;">Credits: Gemini 2.5 Flash</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="research-example">
+                    <h4><i class="fas fa-flask"></i> Research Example</h4>
+                    <p>
+                        <a href="bibliography.html#ref3" class="citation-link">Olumide (2024)</a> surveyed CNNs, YOLO, and Transformers for real-time OCR on cluttered supermarket conditions <a href="bibliography.html#ref3" class="citation-link">[3]</a>.
+                    </p>
+                </div>
+            </div>
+
+                    <!-- Stage 3: Specialized Recognition Tasks -->
+                    <div class="stage-slide" id="stage3">
+                <div class="stage-header">
+                    <div class="stage-number">3</div>
+                    <h2 class="stage-title">Specialized Recognition Tasks</h2>
+                </div>
+
+                <div class="stage-goal">
+                    <strong>Goal:</strong> Extract meaningful information (not just raw text).
+                </div>
+
+                <div class="task-grid">
+                    <div class="task-card">
+                        <span class="task-emoji">🥗</span>
+                        <h3 class="task-title">Nutritional Labels</h3>
+                        <p>Extract structured values (calories, sugar, fat) from nutrition facts panels.</p>
+                        <div class="research-example" style="margin-top: 1rem;">
+                            <p><strong>Research:</strong> <a href="bibliography.html#ref1" class="citation-link">Saputra et al. (2024)</a> showed bounding box segmentation increased accuracy <a href="bibliography.html#ref1" class="citation-link">[1]</a>.</p>
+                        </div>
+                    </div>
+
+                    <div class="task-card">
+                        <span class="task-emoji">📅</span>
+                        <h3 class="task-title">Expiration Dates</h3>
+                        <p><strong>Problem:</strong> Many formats ("Best by 06/25", "06/2025", etc.)</p>
+                        <div class="research-example" style="margin-top: 1rem;">
+                            <p><strong>Solution:</strong> <a href="bibliography.html#ref2" class="citation-link">Grumeza et al. (2024)</a> combined EasyOCR + LLMs to interpret ambiguous formats <a href="bibliography.html#ref2" class="citation-link">[2]</a>.</p>
+                        </div>
+                    </div>
+
+                    <div class="task-card">
+                        <span class="task-emoji">⚠️</span>
+                        <h3 class="task-title">Allergen Detection</h3>
+                        <p><a href="bibliography.html#ref5" class="citation-link">Johan & Rizal (2021)</a>: Used OCR + Boyer-Moore string matching against allergen keywords (milk, soy, nuts, etc.) <a href="bibliography.html#ref5" class="citation-link">[5]</a>.</p>
+                        <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 1rem; margin-top: 1rem;">
+                            <p><strong>⚠️ Limitation:</strong> Works only if OCR accuracy is high.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Specialized Recognition Tasks Overview Image -->
+                <div class="stage-image-container" style="margin-top: 2rem; text-align: center; position: relative; display: inline-block;">
+                    <img src="images/Nutrition_Allergen_Expiry.png" alt="Nutrition, Allergen, and Expiry Date Recognition Overview"
+                         style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: var(--shadow-medium);" />
+                    <div style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); color: white; padding: 6px 12px; border-radius: 15px; font-size: 0.7rem; font-weight: 500; z-index: 10; white-space: nowrap;">Credits: Gemini 2.5 Flash</div>
+                </div>
+
+                    </div>
+
+                    <!-- Quiz Slide -->
+                    <div class="stage-slide" id="quizSlide">
+                        <!-- Quiz Introduction (shown by default) -->
+                        <div class="quiz-intro-slide" id="quizIntroSlide">
+                            <div class="stage-header">
+                                <div class="stage-number">🧠</div>
+                                <h2 class="stage-title">Test Your Knowledge</h2>
+                            </div>
+
+                            <div class="stage-goal">
+                                <strong>Goal:</strong> Reinforce your understanding of the complete pipeline.
+                            </div>
+
+                            <div style="text-align: center; padding: 2rem;">
+                                <p style="font-size: 1.1rem; color: var(--text-light); margin-bottom: 2rem;">
+                                    Ready to test your understanding of computer vision techniques for food label reading?<br>
+                                    Take this quick 3-question quiz to reinforce what you've learned.
+                                </p>
+                                <button class="start-quiz-btn" onclick="startQuizInSlide()">
+                                    <i class="fas fa-play"></i>
+                                    Start Quiz
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Quiz Content (hidden by default) -->
+                        <div class="quiz-content-slide" id="quizContentSlide" style="display: none; position: relative;">
+                            <div class="stage-header">
+                                <div class="stage-number">🧠</div>
+                                <h2 class="stage-title">Quiz: Computer Vision Techniques</h2>
+                            </div>
+
+                            <!-- Question 1 -->
+                            <div class="question-card">
+                                <div class="question-header">
+                                    <div class="question-number">1</div>
+                                    <span class="question-type">MCQ</span>
+                                </div>
+                                <div class="question-text">
+                                    What is a key limitation of traditional OCR systems like Tesseract when applied to food labels?
+                                </div>
+                                <div class="options-container">
+                                    <div class="option" data-question="1" data-option="A">
+                                        <div class="option-letter">A</div>
+                                        <span>They require large GPU resources</span>
+                                    </div>
+                                    <div class="option" data-question="1" data-option="B" data-correct="true">
+                                        <div class="option-letter">B</div>
+                                        <span>They struggle with irregular fonts, glare, and cluttered layouts</span>
+                                    </div>
+                                    <div class="option" data-question="1" data-option="C">
+                                        <div class="option-letter">C</div>
+                                        <span>They cannot detect expiration dates</span>
+                                    </div>
+                                    <div class="option" data-question="1" data-option="D">
+                                        <div class="option-letter">D</div>
+                                        <span>They only work in English</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Question 2 -->
+                            <div class="question-card">
+                                <div class="question-header">
+                                    <div class="question-number">2</div>
+                                    <span class="question-type">MCQ</span>
+                                </div>
+                                <div class="question-text">
+                                    Which combination was used by Grumeza et al. (2024) to improve recognition of expiration dates?
+                                </div>
+                                <div class="options-container">
+                                    <div class="option" data-question="2" data-option="A">
+                                        <div class="option-letter">A</div>
+                                        <span>YOLO + CNN</span>
+                                    </div>
+                                    <div class="option" data-question="2" data-option="B">
+                                        <div class="option-letter">B</div>
+                                        <span>Tesseract + Hough Transform</span>
+                                    </div>
+                                    <div class="option" data-question="2" data-option="C" data-correct="true">
+                                        <div class="option-letter">C</div>
+                                        <span>EasyOCR + Large Language Models (LLMs)</span>
+                                    </div>
+                                    <div class="option" data-question="2" data-option="D">
+                                        <div class="option-letter">D</div>
+                                        <span>CRNN + SVM</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Question 3 -->
+                            <div class="question-card">
+                                <div class="question-header">
+                                    <div class="question-number">3</div>
+                                    <span class="question-type">True/False</span>
+                                </div>
+                                <div class="question-text">
+                                    Allergen detection systems always succeed even if OCR makes errors in reading ingredient text.
+                                </div>
+                                <div class="true-false-container">
+                                    <div class="tf-option" data-question="3" data-option="true">
+                                        <i class="fas fa-check" style="color: #4caf50; margin-right: 0.5rem;"></i>
+                                        True
+                                    </div>
+                                    <div class="tf-option" data-question="3" data-option="false" data-correct="true">
+                                        <i class="fas fa-times" style="color: #f44336; margin-right: 0.5rem;"></i>
+                                        False
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="quiz-actions">
+                                <button class="quiz-button check-answers-btn" onclick="checkAnswersInSlide()">
+                                    <i class="fas fa-check-circle" style="margin-right: 0.5rem;"></i>
+                                    Check Answers
+                                </button>
+                                <button class="quiz-button reset-btn" onclick="resetQuizInSlide()">
+                                    <i class="fas fa-redo" style="margin-right: 0.5rem;"></i>
+                                    Reset Quiz
+                                </button>
+                            </div>
+
+                            <div class="quiz-results" id="quizResultsSlide" style="display: none;">
+                                <div class="score-display" id="scoreDisplaySlide"></div>
+                                <div class="score-message" id="scoreMessageSlide"></div>
+                            </div>
+
+                            <!-- Scroll Indicator -->
+                            <div class="scroll-indicator" id="scrollIndicator">
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide Navigation Controls -->
+                <div class="slide-controls">
+                    <button class="slide-nav-btn" id="prevBtn" onclick="changeSlide(-1)">
+                        <i class="fas fa-chevron-left"></i>
+                        Previous
+                    </button>
+
+                    <div class="slide-indicator">
+                        <div class="indicator-dot active" onclick="goToSlide(0)" title="Stage 1: Preprocessing"></div>
+                        <div class="indicator-dot" onclick="goToSlide(1)" title="Stage 2: OCR Methods"></div>
+                        <div class="indicator-dot" onclick="goToSlide(2)" title="Stage 3: Specialized Tasks"></div>
+                        <div class="indicator-dot" onclick="goToSlide(3)" title="Quiz"></div>
+                        <span class="slide-counter">1 / 4</span>
+                    </div>
+
+                    <button class="slide-nav-btn" id="nextBtn" onclick="changeSlide(1)">
+                        Next
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+
+
+            <!-- Page Navigation -->
+            <div class="page-navigation">
+                <a href="introduction.html" class="nav-button">
+                    <i class="fas fa-arrow-left"></i>
+                    Previous: Introduction
+                </a>
+                <a href="interaction.html" class="nav-button">
+                    Next: Interaction
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+            function toggleSidebar() {
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.toggle('show');
+                    sidebarOverlay.classList.toggle('show');
+                } else {
+                    sidebar.classList.toggle('collapsed');
+                    mainContent.classList.toggle('expanded');
+                }
+            }
+
+            function closeSidebar() {
+                sidebar.classList.remove('show');
+                sidebarOverlay.classList.remove('show');
+            }
+
+            sidebarToggle.addEventListener('click', toggleSidebar);
+            sidebarOverlay.addEventListener('click', closeSidebar);
+
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768) {
+                    sidebar.classList.remove('show');
+                    sidebarOverlay.classList.remove('show');
+                }
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeSidebar();
+                }
+            });
+
+            // Quiz functionality
+            setupQuiz();
+
+            // Initialize slide presentation
+            initializeSlides();
+        });
+
+        // Slide presentation functionality
+        let currentSlide = 0;
+        const totalSlides = 4; // 3 stages + 1 quiz
+        const slides = ['stage1', 'stage2', 'stage3', 'quizSlide'];
+
+        let slidesInitialized = false;
+
+        function initializeSlides() {
+            // Only initialize once to prevent resetting user's current slide
+            if (slidesInitialized) {
+                return;
+            }
+
+            // Hide all slides except the first one
+            slides.forEach((slideId, index) => {
+                const slide = document.getElementById(slideId);
+                if (slide) {
+                    slide.classList.remove('active', 'prev');
+                    if (index === 0) {
+                        slide.classList.add('active');
+                    }
+                }
+            });
+            updateSlideDisplay();
+            slidesInitialized = true;
+        }
+
+        function changeSlide(direction) {
+            const newSlide = currentSlide + direction;
+            if (newSlide >= 0 && newSlide < totalSlides) {
+                goToSlide(newSlide);
+            }
+        }
+
+        function goToSlide(slideIndex) {
+            if (slideIndex >= 0 && slideIndex < totalSlides && slideIndex !== currentSlide) {
+                // Hide current slide
+                const currentSlideElement = document.getElementById(slides[currentSlide]);
+                if (currentSlideElement) {
+                    currentSlideElement.classList.remove('active');
+                    currentSlideElement.classList.add('prev');
+                }
+
+                // Update current slide index
+                currentSlide = slideIndex;
+
+                // Show new slide
+                const newSlideElement = document.getElementById(slides[slideIndex]);
+                if (newSlideElement) {
+                    // Small delay to ensure smooth transition
+                    setTimeout(() => {
+                        newSlideElement.classList.remove('prev');
+                        newSlideElement.classList.add('active');
+                    }, 50);
+                }
+
+                updateSlideDisplay();
+            }
+        }
+
+        function updateSlideDisplay() {
+            // Update navigation buttons
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+
+            if (prevBtn && nextBtn) {
+                prevBtn.disabled = currentSlide === 0;
+                nextBtn.disabled = currentSlide === totalSlides - 1;
+            }
+
+            // Update indicators
+            document.querySelectorAll('.indicator-dot').forEach((dot, index) => {
+                dot.classList.toggle('active', index === currentSlide);
+            });
+
+            // Update slide counter text
+            const counter = document.querySelector('.slide-counter');
+            if (counter) {
+                counter.textContent = `${currentSlide + 1} / ${totalSlides}`;
+                counter.style.fontWeight = '700';
+                counter.style.color = 'var(--primary-color)';
+            }
+        }
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowLeft') {
+                changeSlide(-1);
+            } else if (e.key === 'ArrowRight') {
+                changeSlide(1);
+            }
+        });
+
+        function startQuizInSlide() {
+            document.getElementById('quizIntroSlide').style.display = 'none';
+            document.getElementById('quizContentSlide').style.display = 'block';
+
+            // Setup scroll detection for the quiz content
+            setupQuizScrolling();
+        }
+
+        function setupQuizScrolling() {
+            const quizContent = document.getElementById('quizContentSlide');
+            const scrollIndicator = document.getElementById('scrollIndicator');
+
+            if (quizContent && scrollIndicator) {
+                // Check if content is scrollable
+                function checkScrollable() {
+                    const isScrollable = quizContent.scrollHeight > quizContent.clientHeight;
+                    const isAtBottom = quizContent.scrollTop + quizContent.clientHeight >= quizContent.scrollHeight - 10;
+
+                    if (!isScrollable || isAtBottom) {
+                        scrollIndicator.classList.add('hidden');
+                    } else {
+                        scrollIndicator.classList.remove('hidden');
+                    }
+                }
+
+                // Initial check
+                setTimeout(checkScrollable, 100);
+
+                // Check on scroll
+                quizContent.addEventListener('scroll', checkScrollable);
+
+                // Check on window resize
+                window.addEventListener('resize', checkScrollable);
+            }
+        }
+
+        function setupQuiz() {
+            // Add click handlers for MCQ options in the quiz slide
+            document.querySelectorAll('#quizContentSlide .option').forEach(option => {
+                option.addEventListener('click', function() {
+                    const question = this.dataset.question;
+                    // Remove selected class from other options in the same question within the slide
+                    document.querySelectorAll(`#quizContentSlide [data-question="${question}"]`).forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    // Add selected class to clicked option
+                    this.classList.add('selected');
+                });
+            });
+
+            // Add click handlers for True/False options in the quiz slide
+            document.querySelectorAll('#quizContentSlide .tf-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    const question = this.dataset.question;
+                    // Remove selected class from other options in the same question within the slide
+                    document.querySelectorAll(`#quizContentSlide [data-question="${question}"]`).forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    // Add selected class to clicked option
+                    this.classList.add('selected');
+                });
+            });
+        }
+
+        function checkAnswersInSlide() {
+            let score = 0;
+            let totalQuestions = 3;
+
+            // Check Question 1
+            const q1Selected = document.querySelector('#quizContentSlide [data-question="1"].selected');
+            if (q1Selected) {
+                if (q1Selected.dataset.correct) {
+                    q1Selected.classList.add('correct');
+                    score++;
+                } else {
+                    q1Selected.classList.add('incorrect');
+                    // Show correct answer
+                    document.querySelector('#quizContentSlide [data-question="1"][data-correct="true"]').classList.add('correct');
+                }
+            } else {
+                // Show correct answer if nothing selected
+                document.querySelector('#quizContentSlide [data-question="1"][data-correct="true"]').classList.add('correct');
+            }
+
+            // Check Question 2
+            const q2Selected = document.querySelector('#quizContentSlide [data-question="2"].selected');
+            if (q2Selected) {
+                if (q2Selected.dataset.correct) {
+                    q2Selected.classList.add('correct');
+                    score++;
+                } else {
+                    q2Selected.classList.add('incorrect');
+                    // Show correct answer
+                    document.querySelector('#quizContentSlide [data-question="2"][data-correct="true"]').classList.add('correct');
+                }
+            } else {
+                // Show correct answer if nothing selected
+                document.querySelector('#quizContentSlide [data-question="2"][data-correct="true"]').classList.add('correct');
+            }
+
+            // Check Question 3
+            const q3Selected = document.querySelector('#quizContentSlide [data-question="3"].selected');
+            if (q3Selected) {
+                if (q3Selected.dataset.correct) {
+                    q3Selected.classList.add('correct');
+                    score++;
+                } else {
+                    q3Selected.classList.add('incorrect');
+                    // Show correct answer
+                    document.querySelector('#quizContentSlide [data-question="3"][data-correct="true"]').classList.add('correct');
+                }
+            } else {
+                // Show correct answer if nothing selected
+                document.querySelector('#quizContentSlide [data-question="3"][data-correct="true"]').classList.add('correct');
+            }
+
+            // Display results
+            const resultsDiv = document.getElementById('quizResultsSlide');
+            const scoreDisplay = document.getElementById('scoreDisplaySlide');
+            const scoreMessage = document.getElementById('scoreMessageSlide');
+
+            scoreDisplay.textContent = `${score}/${totalQuestions}`;
+
+            if (score === totalQuestions) {
+                scoreMessage.textContent = "🎉 Perfect! You have excellent understanding of computer vision techniques for food label reading.";
+                scoreDisplay.style.color = '#4caf50';
+            } else if (score >= 2) {
+                scoreMessage.textContent = "👍 Good job! You have a solid grasp of the key concepts. Review the areas you missed.";
+                scoreDisplay.style.color = '#ff9800';
+            } else {
+                scoreMessage.textContent = "📚 Keep studying! Review the content above and try again to strengthen your understanding.";
+                scoreDisplay.style.color = '#f44336';
+            }
+
+            resultsDiv.style.display = 'block';
+
+            // Disable check answers button
+            const checkBtn = document.querySelector('#quizContentSlide .check-answers-btn');
+            if (checkBtn) {
+                checkBtn.disabled = true;
+                checkBtn.style.opacity = '0.6';
+            }
+        }
+
+        function resetQuizInSlide() {
+            // Remove all selection and result classes from quiz slide
+            document.querySelectorAll('#quizContentSlide .option, #quizContentSlide .tf-option').forEach(option => {
+                option.classList.remove('selected', 'correct', 'incorrect');
+            });
+
+            // Hide results
+            document.getElementById('quizResultsSlide').style.display = 'none';
+
+            // Re-enable check answers button
+            const checkBtn = document.querySelector('#quizContentSlide .check-answers-btn');
+            if (checkBtn) {
+                checkBtn.disabled = false;
+                checkBtn.style.opacity = '1';
+            }
+
+            // Reset scroll position
+            const quizContent = document.getElementById('quizContentSlide');
+            if (quizContent) {
+                quizContent.scrollTop = 0;
+            }
+
+            // Hide quiz content and show intro within the slide
+            document.getElementById('quizContentSlide').style.display = 'none';
+            document.getElementById('quizIntroSlide').style.display = 'block';
+        }
+
+        // Audio Player Functionality
+        const audioPlayerBtn = document.getElementById('audioPlayerBtn');
+        const audioPlayerContainer = document.getElementById('audioPlayerContainer');
+        const closeAudioBtn = document.getElementById('closeAudioBtn');
+        const pageAudio = document.getElementById('pageAudio');
+        const audioPlayPause = document.getElementById('audioPlayPause');
+        const audioProgress = document.getElementById('audioProgress');
+        const audioProgressBar = document.getElementById('audioProgressBar');
+        const currentTime = document.getElementById('currentTime');
+        const totalTime = document.getElementById('totalTime');
+
+
+        // Open audio player and start playing
+        audioPlayerBtn.addEventListener('click', function() {
+            audioPlayerContainer.classList.add('active');
+            pageAudio.play();
+            updatePlayPauseIcon();
+        });
+
+        // Close audio player
+        closeAudioBtn.addEventListener('click', function() {
+            audioPlayerContainer.classList.remove('active');
+            pageAudio.pause();
+            updatePlayPauseIcon();
+        });
+
+        // Play/Pause functionality
+        audioPlayPause.addEventListener('click', function() {
+            if (pageAudio.paused) {
+                pageAudio.play();
+            } else {
+                pageAudio.pause();
+            }
+            updatePlayPauseIcon();
+        });
+
+        // Update play/pause icon
+        function updatePlayPauseIcon() {
+            const icon = audioPlayPause.querySelector('i');
+            if (pageAudio.paused) {
+                icon.className = 'fas fa-play';
+            } else {
+                icon.className = 'fas fa-pause';
+            }
+        }
+
+        // Format time
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Update progress bar
+        pageAudio.addEventListener('timeupdate', function() {
+            const progress = (pageAudio.currentTime / pageAudio.duration) * 100;
+            audioProgressBar.style.width = progress + '%';
+            currentTime.textContent = formatTime(pageAudio.currentTime);
+        });
+
+        // Set total time when metadata loads
+        pageAudio.addEventListener('loadedmetadata', function() {
+            totalTime.textContent = formatTime(pageAudio.duration);
+        });
+
+        // Click on progress bar to seek
+        audioProgress.addEventListener('click', function(e) {
+            const rect = audioProgress.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const width = rect.width;
+            const clickTime = (clickX / width) * pageAudio.duration;
+            pageAudio.currentTime = clickTime;
+        });
+
+        // Auto-update play/pause icon when audio ends
+        pageAudio.addEventListener('ended', function() {
+            updatePlayPauseIcon();
+        });
+    </script>
+</body>
+</html>
